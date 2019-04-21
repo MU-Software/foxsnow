@@ -6,6 +6,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+
+#include "fs_py_loader_obj.h"
 #include "logo.h"
 
 #ifdef _WIN32
@@ -145,6 +147,7 @@ char* str_replace(char *orig, char *rep, char *with) {
 char* path[65535] = { 0 };
 char* path_python[65535] = { 0 };
 char* path_python_addon[65535] = { 0 };
+char* path_python_script[65535] = { 0 };
 
 GLuint FScreateShader(GLenum shader_type, char* src) {
     GLuint tmp_sha = glCreateShader(shader_type);
@@ -299,7 +302,7 @@ int Initialize() {
     glUniform1i(glGetUniformLocation(m_shader_prog, "tex_1"), 0);
 
     get_exe_path(path, 65535);
-    char* tmp = str_replace(path, "foxsnow.exe", "\0\0\0\0\0\0\0\0\0\0\0");
+    char* tmp = str_replace(path, "foxsnow.exe", "");
     memset(path, 0, sizeof(path));
     strcpy_s(path, 65535, tmp);
     free(tmp);
@@ -307,6 +310,8 @@ int Initialize() {
     strcat(path_python, "Python37");
     strcpy_s(path_python_addon, 65535, path);
     strcat(path_python_addon, "Python_addon");
+    strcpy_s(path_python_script, 65535, path);
+    strcat(path_python_script, "Python_src");
 
     // printf("%s\n", path);
     // printf("%s\n", path_python);
@@ -319,9 +324,10 @@ int Initialize() {
     PyObject *sys = PyImport_ImportModule("sys");
     PyObject *path = PyObject_GetAttrString(sys, "path");
     PyList_Append(path, PyUnicode_FromString(path_python_addon));
+    PyList_Append(path, PyUnicode_FromString(path_python_script));
 
     PyRun_SimpleString("import time;import numpy;print(numpy.version.version)");
-
+    FSloadOBJ("resources/teapot.obj");
     return 0;
 }
 

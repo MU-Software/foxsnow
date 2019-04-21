@@ -1,0 +1,7 @@
+{
+    "C_Cpp.intelliSenseEngineFallback": "Disabled",
+    "files.associations": {
+        "glew.h": "c",
+        "fs_py_support.h": "c"
+    }
+}
