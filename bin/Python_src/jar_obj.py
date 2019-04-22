@@ -35,7 +35,7 @@ def load_obj(filename,
 				v = (v[0], v[2], v[1])
 
 			v = list(map(lambda x: x*scale, v))
-			vertex.append(v)
+			vertex += v
 
 		elif values[0] == 'vn': # Normal
 			v = list(map(float, values[1:4]))
@@ -72,11 +72,12 @@ def load_obj(filename,
 
 	# TODO : Culling control should be modifiable
 	np_vertex = np.array(vertex, dtype=np.float32)
-	np_index  = np.array(index,  dtype=np.float32)
-	print(np_vertex)
+	np_index  = np.array(index,  dtype=np.int)
+	print(np_vertex[100])
 	print(np_index)
 
-	print(type(p_vert))
+	print(np_vertex.size, np_index.size)
+	return (np_vertex.size, ctypes.c_void_p(np_vertex.ctypes.data), np_index.size, ctypes.c_void_p(np_index.ctypes.data))
 	#if type(p_vert) == ctypes.
 
 # def MTL(filename):
