@@ -327,7 +327,13 @@ int Initialize() {
     PyList_Append(path, PyUnicode_FromString(path_python_script));
 
     PyRun_SimpleString("import time;import numpy;print(numpy.version.version)");
-    FSloadOBJ("resources/teapot.obj");
+
+    int teapot_vert_size, teapot_index_size;
+    float* teapot_vertex_array;
+    int* teapot_index_array;
+    FSloadOBJ("resources/teapot.obj", &teapot_vert_size,  teapot_vertex_array,
+                                      &teapot_index_size, teapot_index_array);
+    printf("result = %d\n", teapot_index_array[100]);
     return 0;
 }
 

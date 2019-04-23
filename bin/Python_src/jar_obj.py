@@ -1,10 +1,10 @@
 # TODO
 # - 
 
+import array
 import copy
 import ctypes
 import os
-import numpy as np
 
 dir_path = lambda x : os.path.dirname(os.path.abspath(x)).replace(os.path.sep, '/')
 file_real_path = lambda x, y : dir_path(x) + '/' + y
@@ -21,9 +21,9 @@ def load_obj(filename,
 	texcoord = []
 	index    = []
 
-	mtl = []
+	# mtl = []
 
-	material = None
+	# material = None
 	for line in open(filename, 'r', encoding='utf-8'):
 		if line.startswith('#'): continue
 		values = line.split()
@@ -71,13 +71,19 @@ def load_obj(filename,
 			# self.faces.append((face, norms, texcoord, material))
 
 	# TODO : Culling control should be modifiable
-	np_vertex = np.array(vertex, dtype=np.float32)
-	np_index  = np.array(index,  dtype=np.int)
-	print(np_vertex[100])
-	print(np_index)
+	# np_vertex = np.array(vertex, dtype=np.float32)
+	# np_index  = np.array(index,  dtype=np.int)
+	# print(np_vertex[100])
+	# print(np_index)
+	c_vertex = array.array('f', vertex)
+	c_index  = array.array('i', index)
 
-	print(np_vertex.size, np_index.size)
-	return (np_vertex.size, ctypes.c_void_p(np_vertex.ctypes.data), np_index.size, ctypes.c_void_p(np_index.ctypes.data))
+	vert_info = c_vertex.buffer_info()
+	index_info = c_index.buffer_info()
+	print('vertex | size = {0}, pointer = 0{1} | AT PYTHON'.format(vert_info[1], hex(vert_info[0])[2:].upper()))
+	print('index  | size = {0}, pointer = 0{1} | AT PYTHON'.format(index_info[1], hex(index_info[0])[2:].upper()))
+	print('result = {0}'.format(c_index.tolist()[100]))
+	return (*c_vertex.buffer_info(), *c_index.buffer_info())
 	#if type(p_vert) == ctypes.
 
 # def MTL(filename):

@@ -3,7 +3,7 @@
 
 #include "fs_py_support.h"
 
-GLfloat* FSloadOBJ(char* filename) {
+GLfloat* FSloadOBJ(char* filename, int* vert_size, float* vert_arr, int* index_size, int* index_arr) {
     PyObject* args;
     PyObject* tmp_str;
     PyObject* result;
@@ -20,11 +20,11 @@ GLfloat* FSloadOBJ(char* filename) {
 
     if (pModule != NULL) {
         pFunc = PyObject_GetAttrString(pModule, "load_obj");
-        printf("ALIVE_C\n");
+        // printf(">>> Function call init\n");
         if (pFunc && PyCallable_Check(pFunc)) {
-            printf("ALIVE_C_1\n");
+            // printf(">>> Function successfully loaded!\n");
             result = PyObject_CallObject(pFunc, args);
-            printf("ALIVE_D\n");
+            // printf(">>> Function successfully called!\n");
             Py_DECREF(tmp_str);
             // IMPORTANT : DO Py_DECREF(argument) after function ends.
             // Py_DECREF(argument);
@@ -46,17 +46,15 @@ GLfloat* FSloadOBJ(char* filename) {
         return 1;
     }
 
-    float* verts = NULL;
-    float* index = NULL; 
     int result_len = PyTuple_Size(result);
-    printf("Number of returned value : %d\n", result_len);
     if (result_len == 4) {
-        int arr_size = (int)PyLong_AsLong(PyTuple_GetItem(result, 0));
-        float* tmp_arr = PyTuple_GetItem(result, 1);
-        printf("result_1 = %f\n", *tmp_arr);
+        *vert_size = (int)PyLong_AsLong(PyTuple_GetItem(result, 1));
+        vert_arr   = (int)PyLong_AsLong(PyTuple_GetItem(result, 0));
+        printf("vertex | size = %d, pointer = %p | AT C\n", *vert_size, vert_arr);
 
-        verts = malloc(arr_size);
-        memcpy(verts, PyTuple_GetItem(result, 1), arr_size);
-        printf("result = %f\n", verts[100]);
+        *index_size = (int)PyLong_AsLong(PyTuple_GetItem(result, 3));
+        index_arr   = (int)PyLong_AsLong(PyTuple_GetItem(result, 2));
+        printf("index  | size = %d, pointer = %p | AT C\n", *index_size, index_arr);
     }
+
 }
