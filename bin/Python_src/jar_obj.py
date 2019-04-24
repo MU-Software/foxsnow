@@ -76,12 +76,13 @@ def load_obj(filename,
 	# print(np_vertex[100])
 	# print(np_index)
 	c_vertex = array.array('f', vertex)
-	c_index  = array.array('i', index)
+	c_index  = array.array('I', index)
 
 	vert_info = c_vertex.buffer_info()
 	index_info = c_index.buffer_info()
 	print('vertex | size = {0}, pointer = 0{1} | AT PYTHON'.format(vert_info[1], hex(vert_info[0])[2:].upper()))
 	print('index  | size = {0}, pointer = 0{1} | AT PYTHON'.format(index_info[1], hex(index_info[0])[2:].upper()))
+	print('result = {0}'.format(c_vertex.tolist()[100]))
 	print('result = {0}'.format(c_index.tolist()[100]))
 	return (*c_vertex.buffer_info(), *c_index.buffer_info())
 	#if type(p_vert) == ctypes.

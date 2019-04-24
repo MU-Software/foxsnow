@@ -149,6 +149,11 @@ char* path_python[65535] = { 0 };
 char* path_python_addon[65535] = { 0 };
 char* path_python_script[65535] = { 0 };
 
+
+int teapot_vert_size, teapot_index_size;
+float* teapot_vertex_array;
+int* teapot_index_array;
+
 GLuint FScreateShader(GLenum shader_type, char* src) {
     GLuint tmp_sha = glCreateShader(shader_type);
     GLint status;
@@ -227,7 +232,7 @@ int Initialize() {
 
     // Initialize rendering context
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
     SDL_GL_SetAttribute(
         SDL_GL_CONTEXT_PROFILE_MASK,
         SDL_GL_CONTEXT_PROFILE_CORE);
@@ -277,30 +282,6 @@ int Initialize() {
     glLinkProgram(m_shader_prog);
     glUseProgram(m_shader_prog);
 
-    /* Initialize Geometry */
-    glGenBuffers(1, &m_vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
-
-    // Populate element buffer
-    glGenBuffers(1, &m_ebo);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ebo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indicies), indicies, GL_STATIC_DRAW);
-
-    // Bind vertex position attribute
-    GLint pos_attr_loc = glGetAttribLocation(m_shader_prog, "fs_Vertex");
-    glVertexAttribPointer(pos_attr_loc, 2, GL_FLOAT, GL_FALSE, 4*sizeof(GLfloat), (void*)0);
-    glEnableVertexAttribArray(pos_attr_loc);
-
-    // Bind vertex texture coordinate attribute
-    GLint tex_attr_loc = glGetAttribLocation(m_shader_prog, "fs_MultiTexCoord0");
-    glVertexAttribPointer(tex_attr_loc, 2, GL_FLOAT, GL_FALSE, 4*sizeof(GLfloat), (void*)(2*sizeof(GLfloat)));
-    glEnableVertexAttribArray(tex_attr_loc);
-
-    /* Initialize textures */
-    GLuint screen_tex = FScreateTexture(256, logo_rgba);
-    glUniform1i(glGetUniformLocation(m_shader_prog, "tex_1"), 0);
-
     get_exe_path(path, 65535);
     char* tmp = str_replace(path, "foxsnow.exe", "");
     memset(path, 0, sizeof(path));
@@ -328,12 +309,36 @@ int Initialize() {
 
     PyRun_SimpleString("import time;import numpy;print(numpy.version.version)");
 
-    int teapot_vert_size, teapot_index_size;
-    float* teapot_vertex_array;
-    int* teapot_index_array;
-    FSloadOBJ("resources/teapot.obj", &teapot_vert_size,  teapot_vertex_array,
-                                      &teapot_index_size, teapot_index_array);
+    FSloadOBJ("resources/teapot.obj", &teapot_vert_size,  &teapot_vertex_array,
+                                      &teapot_index_size, &teapot_index_array);
+        printf("index  | size = %d, pointer = %p | AT C\n", teapot_vert_size, teapot_index_array);
+    printf("result = %lf\n", teapot_vertex_array[100]);
     printf("result = %d\n", teapot_index_array[100]);
+
+    /* Initialize Geometry */
+    glGenBuffers(1, &m_vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
+    // glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(teapot_vertex_array), teapot_vertex_array, GL_STATIC_DRAW);
+
+    // Populate element buffer
+    glGenBuffers(1, &m_ebo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ebo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(teapot_index_array), teapot_index_array, GL_STATIC_DRAW);
+
+    // Bind vertex position attribute
+    GLint pos_attr_loc = glGetAttribLocation(m_shader_prog, "fs_Vertex");
+    glVertexAttribPointer(pos_attr_loc, 3, GL_FLOAT, GL_FALSE, 3*sizeof(GLfloat), (void*)0);
+    glEnableVertexAttribArray(pos_attr_loc);
+
+    // Bind vertex texture coordinate attribute
+    // GLint tex_attr_loc = glGetAttribLocation(m_shader_prog, "fs_MultiTexCoord0");
+    // glVertexAttribPointer(tex_attr_loc, 2, GL_FLOAT, GL_FALSE, 4*sizeof(GLfloat), (void*)(2*sizeof(GLfloat)));
+    // glEnableVertexAttribArray(tex_attr_loc);
+
+    // /* Initialize textures */
+    // GLuint screen_tex = FScreateTexture(256, logo_rgba);
+    // glUniform1i(glGetUniformLocation(m_shader_prog, "tex_1"), 0);
     return 0;
 }
 
@@ -368,9 +373,9 @@ int FS_clean_up() {
  * Render a frame
  */
 int OGL_render_update() {
-    glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
+    glClearColor(0.5f, 0.75f, 1.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, NULL);
+    glDrawElements(GL_TRIANGLES, teapot_index_size, GL_UNSIGNED_INT, NULL);
     SDL_GL_SwapWindow(m_window);
     return 0;
 }

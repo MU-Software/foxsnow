@@ -3,7 +3,7 @@
 
 #include "fs_py_support.h"
 
-GLfloat* FSloadOBJ(char* filename, int* vert_size, float* vert_arr, int* index_size, int* index_arr) {
+GLfloat* FSloadOBJ(char* filename, int* vert_size, float** vert_arr, int** index_size, int* index_arr) {
     PyObject* args;
     PyObject* tmp_str;
     PyObject* result;
@@ -49,11 +49,11 @@ GLfloat* FSloadOBJ(char* filename, int* vert_size, float* vert_arr, int* index_s
     int result_len = PyTuple_Size(result);
     if (result_len == 4) {
         *vert_size = (int)PyLong_AsLong(PyTuple_GetItem(result, 1));
-        vert_arr   = (int)PyLong_AsLong(PyTuple_GetItem(result, 0));
+        *vert_arr   = (float*)PyLong_AsLong(PyTuple_GetItem(result, 0));
         printf("vertex | size = %d, pointer = %p | AT C\n", *vert_size, vert_arr);
 
         *index_size = (int)PyLong_AsLong(PyTuple_GetItem(result, 3));
-        index_arr   = (int)PyLong_AsLong(PyTuple_GetItem(result, 2));
+        *index_arr   = (int*)PyLong_AsLong(PyTuple_GetItem(result, 2));
         printf("index  | size = %d, pointer = %p | AT C\n", *index_size, index_arr);
     }
 
