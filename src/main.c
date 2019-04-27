@@ -319,12 +319,12 @@ int Initialize() {
     glGenBuffers(1, &m_vbo);
     glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
     // glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(teapot_vertex_array), teapot_vertex_array, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, teapot_vert_size*sizeof(float), teapot_vertex_array, GL_STATIC_DRAW);
 
     // Populate element buffer
     glGenBuffers(1, &m_ebo);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ebo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(teapot_index_array), teapot_index_array, GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, teapot_index_size*sizeof(int), teapot_index_array, GL_STATIC_DRAW);
 
     // Bind vertex position attribute
     GLint pos_attr_loc = glGetAttribLocation(m_shader_prog, "fs_Vertex");

@@ -14,7 +14,7 @@ file_real_path = lambda x, y : dir_path(x) + '/' + y
 def load_obj(filename,
 			 p_vert=None, p_index=None,
 			 enable_cull=True, # cull=gl.GL_CCW,
-			 scale=1.0, swapyz=False):
+			 scale=.25, swapyz=False):
 	"""Loads a Wavefront OBJ file. """
 	vertex   = []
 	normal   = []
