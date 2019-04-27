@@ -14,10 +14,68 @@
     #include "windows.h"
 #endif
 
-#define True 1
-#define False 0
+typedef struct _TextureInfo {
+    GLint i_format;
+    GLint format;
+    GLenum type;
+    GLenum attachment;
+    GLint texture_id;
+} TextureInfo;
+
+TextureInfo FS_CoreFrameBuffer[] = {
+    {
+        .i_format   = GL_RGBA8,
+        .format     = GL_RGBA,
+        .type       = GL_UNSIGNED_BYTE,
+        .attachment = GL_COLOR_ATTACHMENT0,
+        .texture_id = 0,
+    },
+    {
+        .i_format   = GL_RGBA8,
+        .format     = GL_RGBA,
+        .type       = GL_UNSIGNED_BYTE,
+        .attachment = GL_COLOR_ATTACHMENT1,
+        .texture_id = 0,
+    },
+    {
+        .i_format   = GL_RGBA8,
+        .format     = GL_RGBA,
+        .type       = GL_UNSIGNED_BYTE,
+        .attachment = GL_COLOR_ATTACHMENT2,
+        .texture_id = 0,
+    },
+    {
+        .i_format   = GL_DEPTH_COMPONENT32,
+        .format     = GL_DEPTH_COMPONENT,
+        .type       = GL_FLOAT,
+        .attachment = GL_DEPTH_ATTACHMENT,
+        .texture_id = 0,
+    },
+};
 
 const int FPS_LIMIT = 60;
+
+char* path[65535] = { 0 };
+char* path_python[65535] = { 0 };
+char* path_python_addon[65535] = { 0 };
+char* path_python_script[65535] = { 0 };
+
+int current_resolution_x = 800;
+int current_resolution_y = 600;
+
+int teapot_vert_size, teapot_index_size;
+float* teapot_vertex_array;
+int* teapot_index_array;
+
+const GLfloat verts[6][4] = {
+    //  x      y      s      t
+    { -1.0f, -1.0f,  0.0f,  1.0f }, // BL
+    { -1.0f,  1.0f,  0.0f,  0.0f }, // TL
+    {  1.0f,  1.0f,  1.0f,  0.0f }, // TR
+    {  1.0f, -1.0f,  1.0f,  1.0f }, // BR
+};
+const GLint indicies[] = { 0, 1, 2, 0, 2, 3 };
+
 
 SDL_Window    *m_window;
 SDL_GLContext  m_context;
@@ -144,16 +202,6 @@ char* str_replace(char *orig, char *rep, char *with) {
     return result;
 }
 
-char* path[65535] = { 0 };
-char* path_python[65535] = { 0 };
-char* path_python_addon[65535] = { 0 };
-char* path_python_script[65535] = { 0 };
-
-
-int teapot_vert_size, teapot_index_size;
-float* teapot_vertex_array;
-int* teapot_index_array;
-
 GLuint FScreateShader(GLenum shader_type, char* src) {
     GLuint tmp_sha = glCreateShader(shader_type);
     GLint status;
@@ -196,15 +244,27 @@ GLuint FScreateTexture(int size, unsigned char* data) {
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     return tex_id;
 }
+}
 
-const GLfloat verts[6][4] = {
-    //  x      y      s      t
-    { -1.0f, -1.0f,  0.0f,  1.0f }, // BL
-    { -1.0f,  1.0f,  0.0f,  0.0f }, // TL
-    {  1.0f,  1.0f,  1.0f,  0.0f }, // TR
-    {  1.0f, -1.0f,  1.0f,  1.0f }, // BR
-};
-const GLint indicies[] = { 0, 1, 2, 0, 2, 3 };
+GLuint FS_generateTextureFBO(GLint target_fbo, int w, int h, TextureInfo *info) {
+    GLint current_fbo;
+    glGetIntegerV(GL_FRAMEBUFFER_BINDING, &current_fbo);
+
+    GLuint tex_id;
+    glGenTextures(1, &tex_id);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, tex_id);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, size, size, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,     GL_CLAMP_TO_BORDER);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,     GL_CLAMP_TO_BORDER);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, current_fbo);
+    return tex_id;
+}
 
 /*
  * Basic Initialization
@@ -219,10 +279,12 @@ int Initialize() {
     }
 
     // Create main window
+    int sdl_window_status = SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE;
     m_window = SDL_CreateWindow(
         "FoxSnow",
         SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-        640, 480, SDL_WINDOW_OPENGL);
+        current_resolution_x, current_resolution_y,
+        sdl_window_status);
 
     if (m_window == NULL) {
         fprintf(stderr, "Failed to create main window\n");
@@ -378,6 +440,25 @@ int OGL_render_update() {
     glDrawElements(GL_TRIANGLES, teapot_index_size, GL_UNSIGNED_INT, NULL);
     SDL_GL_SwapWindow(m_window);
     return 0;
+}
+
+void SDL_onResize(int w, int h) {
+    current_resolution_x = w;
+    current_resolution_x = h;
+
+    glDeleteTextures(4, {
+        FS_CoreFrameBuffer[0].texture_id,
+        FS_CoreFrameBuffer[1].texture_id,
+        FS_CoreFrameBuffer[2].texture_id,
+        FS_CoreFrameBuffer[3].texture_id,
+    });
+
+    for (int z = 0; z < 4; z++) {
+        glGenTextures();
+    }
+
+    printf("FS SDL : EVENT RESIZE %d %d\n",
+           current_resolution_x, current_resolution_y);
 }
 
 /*
