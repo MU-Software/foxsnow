@@ -24,7 +24,7 @@ typedef struct _TextureInfo {
     GLint format;
     GLenum type;
     GLenum attachment;
-    GLint texture_id;
+    GLuint texture_id;
 } TextureInfo;
 
 TextureInfo FS_CoreFrameBufferTexture[] = {
@@ -77,6 +77,7 @@ GLfloat FS_CoreScreenQuadTexCoord[] = {
     0.0f, 0.0f,
 };
 GLuint FS_CoreScreenQuadVAO;
+GLuint FS_CoreScreenQuadVBO;
 
 GLuint FS_CoreScreenVertShader;
 GLuint FS_CoreScreenFragShader;
@@ -99,6 +100,10 @@ GLuint         m_vert_shader;
 GLuint         m_frag_shader;
 GLuint         m_shader_prog;
 
+bool mode_multiple_viewport = false;
+bool mode_wireframe = false;
+bool mode_fullscreen = false;
+
 int Initialize();
 int OGL_render_update();
 int FS_clean_up();
@@ -107,6 +112,21 @@ char* file_to_mem(char* path);
 GLuint FScreateShader(GLenum shader_type, char* src);
 GLuint FScreateTexture(int size, unsigned char* data);
 
+void GLAPIENTRY MessageCallback(GLenum source,
+                                GLenum type,
+                                GLuint id,
+                                GLenum severity,
+                                GLsizei length,
+                                const GLchar* message,
+                                const void* userParam ) {
+  fprintf( stderr, "GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s\n",
+           ( type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : "" ),
+            type, severity, message );
+}
+
+void console_clear() {
+    printf("                                           \r");
+}
 unsigned int HashCode(const char *str) {
     unsigned int hash = 0;
     while (*str) {
@@ -278,6 +298,12 @@ GLuint FS_generateTextureFBO(GLint target_fbo, int w, int h, TextureInfo *info) 
     glBindFramebuffer(GL_FRAMEBUFFER, current_fbo);
     return tex_id;
 }
+GLuint FS_deleteTexture(GLint target_fbo, TextureInfo *info) {
+    GLuint tex_id = info->texture_id;
+    glFramebufferTexture2D(GL_FRAMEBUFFER, info->attachment, GL_TEXTURE_2D, 0, 0);
+    glDeleteTextures(1, &tex_id);
+    info->texture_id = 0;
+}
 
 /*
  * Basic Initialization
@@ -333,8 +359,17 @@ int Initialize() {
         return 1;
     }
 
-    glEnable(GL_BLEND);
+    glEnable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_DEPTH_CLAMP);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glFrontFace(GL_CCW);
+    glDisable(GL_DEPTH_CLAMP);
+
+    // During init, enable debug output
+    glEnable(GL_DEBUG_OUTPUT);
+    glDebugMessageCallback(MessageCallback, 0);
 
     /* Initialize Shaders */
     GLint status;
@@ -389,7 +424,7 @@ int Initialize() {
 
     FSloadOBJ("resources/teapot.obj", &teapot_vert_size,  &teapot_vertex_array,
                                       &teapot_index_size, &teapot_index_array);
-        printf("index  | size = %d, pointer = %p | AT C\n", teapot_vert_size, teapot_index_array);
+    printf("index  | size = %d, pointer = %p | AT C\n", teapot_vert_size, teapot_index_array);
     printf("result = %lf\n", teapot_vertex_array[100]);
     printf("result = %d\n", teapot_index_array[100]);
 
@@ -404,11 +439,13 @@ int Initialize() {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ebo);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, teapot_index_size*sizeof(int), teapot_index_array, GL_STATIC_DRAW);
 
+
     // Bind vertex position attribute
     GLint pos_attr_loc = glGetAttribLocation(m_shader_prog, "fs_Vertex");
     glEnableVertexAttribArray(pos_attr_loc);
     glVertexAttribPointer(pos_attr_loc, 3, GL_FLOAT, GL_FALSE, 3*sizeof(GLfloat), (void*)0);
 
+    glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
@@ -423,30 +460,18 @@ int Initialize() {
             current_resolution_x,
             current_resolution_y,
             &FS_CoreFrameBufferTexture[z]);
-    
-    GLenum err = glGetError();
-    if (err != GL_NO_ERROR) printf("ERROR - glError C: 0x%04X\n", err);
 
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE){
         printf("FS GL : FRAMEBUFFER NOT COMPLETE");
         exit(1);
     }
 
-    err = glGetError();
-    if (err != GL_NO_ERROR) printf("ERROR - glError B: 0x%04X\n", err);
-
-    printf("TEX_ID_0 = %d\n", FS_CoreFrameBufferTexture[0].texture_id);
-    printf("TEX_ID_1 = %d\n", FS_CoreFrameBufferTexture[1].texture_id);
-    printf("TEX_ID_2 = %d\n", FS_CoreFrameBufferTexture[2].texture_id);
     GLenum tmp_buf[] = {
         GL_COLOR_ATTACHMENT0,
         GL_COLOR_ATTACHMENT1,
         GL_COLOR_ATTACHMENT2,
     };
     glDrawBuffers(3, tmp_buf);
-
-    err = glGetError();
-    if (err != GL_NO_ERROR) printf("ERROR - glError A: 0x%04X\n", err);
 
     /* FBO - Setup Shader */
     vert_shader_src = file_to_mem("core_screen.vert.glsl");
@@ -467,30 +492,29 @@ int Initialize() {
     glUseProgram(FS_CoreScreenShaderProgram);
 
     /* FBO - Initialize Geometry */
-    glGenBuffers(1, &FS_CoreScreenQuadVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, FS_CoreScreenQuadVAO);
+    glGenVertexArrays(1, &FS_CoreScreenQuadVAO);
+    glBindVertexArray(FS_CoreScreenQuadVAO);
+    glGenBuffers(1, &FS_CoreScreenQuadVBO);
+    glBindBuffer(GL_ARRAY_BUFFER, FS_CoreScreenQuadVBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(FS_CoreScreenQuadVert)+sizeof(FS_CoreScreenQuadTexCoord), NULL, GL_STATIC_DRAW);
     glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(FS_CoreScreenQuadVert), FS_CoreScreenQuadVert);
     glBufferSubData(GL_ARRAY_BUFFER, sizeof(FS_CoreScreenQuadVert), sizeof(FS_CoreScreenQuadTexCoord), FS_CoreScreenQuadTexCoord);
-
-    err = glGetError();
-    if (err != GL_NO_ERROR) printf("ERROR - glError X: 0x%04X\n", err);
 
     pos_attr_loc = glGetAttribLocation(FS_CoreScreenShaderProgram, "fs_Vertex");
     glVertexAttribPointer(pos_attr_loc, 3, GL_FLOAT, GL_FALSE, 3*sizeof(GLfloat), (void*)0);
     glEnableVertexAttribArray(pos_attr_loc);
     
-    err = glGetError();
-    if (err != GL_NO_ERROR) printf("ERROR - glError Y: 0x%04X\n", err);
+    // err = glGetError();
+    // if (err != GL_NO_ERROR) printf("ERROR - glError Y: 0x%04X\n", err);
 
     pos_attr_loc = glGetAttribLocation(FS_CoreScreenShaderProgram, "fs_MultiTexCoord0");
-    glVertexAttribPointer(pos_attr_loc, 2, GL_FLOAT, GL_FALSE, 2*sizeof(GLfloat), (void*)sizeof(FS_CoreScreenQuadVert));
     glEnableVertexAttribArray(pos_attr_loc);
+    glVertexAttribPointer(pos_attr_loc, 2, GL_FLOAT, GL_FALSE, 2*sizeof(GLfloat), (void*)sizeof(FS_CoreScreenQuadVert));
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 
-    err = glGetError();
-    if (err != GL_NO_ERROR) printf("ERROR - glError Z: 0x%04X\n", err);
+    // err = glGetError();
+    // if (err != GL_NO_ERROR) printf("ERROR - glError Z: 0x%04X\n", err);
 
     // Bind vertex texture coordinate attribute
     // GLint tex_attr_loc = glGetAttribLocation(m_shader_prog, "fs_MultiTexCoord0");
@@ -500,6 +524,10 @@ int Initialize() {
     // /* Initialize textures */
     // GLuint screen_tex = FScreateTexture(256, logo_rgba);
     // glUniform1i(glGetUniformLocation(m_shader_prog, "tex_1"), 0);
+
+
+    GLenum err = glGetError();
+    if (err != GL_NO_ERROR) printf("ERROR - glError 8: 0x%04X\n", err);
 
     return 0;
 }
@@ -535,49 +563,103 @@ int FS_clean_up() {
  * Render a frame
  */
 int OGL_render_update() {
-    glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+    glPolygonMode(GL_FRONT_AND_BACK, (mode_wireframe ? GL_LINE : GL_FILL));
     glBindFramebuffer(GL_FRAMEBUFFER, FS_CoreFrameBuffer);
 
     glClearColor(0.5f, 0.75f, 1.0f, 1.0f);
     glClearDepth(1.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    glUseProgram(m_shader_prog);
+    glBindVertexArray(m_vao);
     glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ebo);
+    glUseProgram(m_shader_prog);
     glDrawElements(GL_TRIANGLES, teapot_index_size, GL_UNSIGNED_INT, 0);
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-    glClearColor(0.5f, 0.75f, 1.0f, 1.0f);
+    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glClearDepth(1.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
 
     glBindVertexArray(FS_CoreScreenQuadVAO);
     glUseProgram(FS_CoreScreenShaderProgram);
-    glBindTexture(GL_TEXTURE_2D, FS_CoreFrameBufferTexture[0].texture_id);
-    glDrawArrays(GL_TRIANGLES, 0, 6);
+
+    if (mode_multiple_viewport) {
+        int multi_scrn_tgt_x = current_resolution_x/3;
+        int multi_scrn_tgt_y = current_resolution_y/3;
+
+        // 1X3
+        glBindTexture(GL_TEXTURE_2D, FS_CoreFrameBufferTexture[0].texture_id);
+        glViewport(0, multi_scrn_tgt_y+1, multi_scrn_tgt_x*2+1, multi_scrn_tgt_y*2);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+
+        // 1X3
+        glBindTexture(GL_TEXTURE_2D, FS_CoreFrameBufferTexture[0].texture_id);
+        glViewport(multi_scrn_tgt_x*2+2, multi_scrn_tgt_y*2+2, multi_scrn_tgt_x, multi_scrn_tgt_y);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+
+        // 2X3
+        glBindTexture(GL_TEXTURE_2D, FS_CoreFrameBufferTexture[1].texture_id);
+        glViewport(multi_scrn_tgt_x*2+2, multi_scrn_tgt_y+1, multi_scrn_tgt_x, multi_scrn_tgt_y);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+
+        // 3X3
+        glBindTexture(GL_TEXTURE_2D, FS_CoreFrameBufferTexture[2].texture_id);
+        glViewport(multi_scrn_tgt_x*2+2, 0, multi_scrn_tgt_x, multi_scrn_tgt_y);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+
+        // 3X1
+        glBindTexture(GL_TEXTURE_2D, FS_CoreFrameBufferTexture[3].texture_id);
+        glViewport(0, 0, multi_scrn_tgt_x, multi_scrn_tgt_y);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+
+        // 3X2
+        glBindTexture(GL_TEXTURE_2D, FS_CoreFrameBufferTexture[0].texture_id);
+        glViewport(multi_scrn_tgt_x+1, 0, multi_scrn_tgt_x, multi_scrn_tgt_y);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+    } else {
+        glBindTexture(GL_TEXTURE_2D, FS_CoreFrameBufferTexture[0].texture_id);
+        glViewport(0, 0, current_resolution_x, current_resolution_y);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+    }
+
+    GLenum err = glGetError();
+    if (err != GL_NO_ERROR) printf("ERROR WHILE RENDER - glError : 0x%04X\n", err);
 
     SDL_GL_SwapWindow(m_window);
     return 0;
 }
 
 void SDL_onResize(int w, int h) {
-    current_resolution_x = w;
-    current_resolution_x = h;
+    if (!w || !h)
+        SDL_GetWindowSize(m_window, &current_resolution_x, &current_resolution_y);
+    else
+        current_resolution_x = w, current_resolution_y = h;
 
-    GLint tmp_tex_id[] = {
-        FS_CoreFrameBufferTexture[0].texture_id,
-        FS_CoreFrameBufferTexture[1].texture_id,
-        FS_CoreFrameBufferTexture[2].texture_id,
-        FS_CoreFrameBufferTexture[3].texture_id,
-    };
-    glDeleteTextures(4, tmp_tex_id);
-
-    for (int z = 0; z < 4; z++) {
-        FS_generateTextureFBO(NULL, w, h, &FS_CoreFrameBufferTexture[z]);
+    glDeleteFramebuffers(1, &FS_CoreFrameBuffer);
+     for(int z=0;z<4;z++) {
+         glDeleteTextures(1, &FS_CoreFrameBufferTexture[z].texture_id);
     }
 
+    glGenFramebuffers(1, &FS_CoreFrameBuffer);
+    glBindFramebuffer(GL_FRAMEBUFFER, FS_CoreFrameBuffer);
+
+    /* FBO - Generate Texture */
+    for (int z=0; z < 4; z++)
+        FS_generateTextureFBO(
+            FS_CoreFrameBuffer,
+            current_resolution_x,
+            current_resolution_y,
+            &FS_CoreFrameBufferTexture[z]);
+
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE){
+        printf("FS GL : FRAMEBUFFER NOT COMPLETE");
+        exit(1);
+    }
+
+    console_clear();
     printf("FS SDL : EVENT RESIZE %d %d\n",
            current_resolution_x, current_resolution_y);
 }
@@ -602,9 +684,23 @@ int main(int argc, char *argv[]) {
                 should_run = false;
                 break;
             }
+            else if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_RESIZED) {
+                SDL_onResize(event.window.data1, event.window.data2);
+            }
             else if (event.type == SDL_KEYDOWN) {
                 if (event.key.keysym.sym == SDLK_F12) cap = !cap;
                 else if (event.key.keysym.sym == SDLK_ESCAPE) should_run = false;
+                else if (event.key.keysym.sym == SDLK_w) mode_wireframe  = !mode_wireframe;
+                else if (event.key.keysym.sym == SDLK_f) {
+                    // SDL_WINDOW_FULLSCREEN will do 'real' fullscreen with video mode change,
+                    // while SDL_WINDOW_FULLSCREEN_DESKTOP will do "fake" fullscreen
+                    // that takes the size of the desktop.
+                    mode_fullscreen = !mode_fullscreen;
+
+                    SDL_SetWindowFullscreen(m_window, (mode_fullscreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0));
+                    SDL_onResize(0, 0);
+                }
+                else if (event.key.keysym.sym == SDLK_TAB) mode_multiple_viewport = !mode_multiple_viewport;
             }
         }
 
