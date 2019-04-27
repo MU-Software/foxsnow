@@ -14,6 +14,11 @@
     #include "windows.h"
 #endif
 
+char* path[65535] = { 0 };
+char* path_python[65535] = { 0 };
+char* path_python_addon[65535] = { 0 };
+char* path_python_script[65535] = { 0 };
+
 typedef struct _TextureInfo {
     GLint i_format;
     GLint format;
@@ -22,7 +27,7 @@ typedef struct _TextureInfo {
     GLint texture_id;
 } TextureInfo;
 
-TextureInfo FS_CoreFrameBuffer[] = {
+TextureInfo FS_CoreFrameBufferTexture[] = {
     {
         .i_format   = GL_RGBA8,
         .format     = GL_RGBA,
@@ -53,13 +58,31 @@ TextureInfo FS_CoreFrameBuffer[] = {
     },
 };
 
+GLfloat FS_CoreScreenQuadVert[] = {
+    -1.0f, -1.0f,  0.0f,
+     1.0f, -1.0f,  0.0f,
+     1.0f,  1.0f,  0.0f,
+
+     1.0f,  1.0f,  0.0f,
+    -1.0f,  1.0f,  0.0f,
+    -1.0f, -1.0f,  0.0f,
+};
+GLfloat FS_CoreScreenQuadTexCoord[] = {
+    0.0f, 0.0f,
+    1.0f, 0.0f,
+    1.0f, 1.0f,
+
+    1.0f, 1.0f,
+    0.0f, 1.0f,
+    0.0f, 0.0f,
+};
+GLuint FS_CoreScreenQuadVAO;
+
+GLuint FS_CoreScreenVertShader;
+GLuint FS_CoreScreenFragShader;
+GLuint FS_CoreScreenShaderProgram;
+
 const int FPS_LIMIT = 60;
-
-char* path[65535] = { 0 };
-char* path_python[65535] = { 0 };
-char* path_python_addon[65535] = { 0 };
-char* path_python_script[65535] = { 0 };
-
 int current_resolution_x = 800;
 int current_resolution_y = 600;
 
@@ -67,15 +90,7 @@ int teapot_vert_size, teapot_index_size;
 float* teapot_vertex_array;
 int* teapot_index_array;
 
-const GLfloat verts[6][4] = {
-    //  x      y      s      t
-    { -1.0f, -1.0f,  0.0f,  1.0f }, // BL
-    { -1.0f,  1.0f,  0.0f,  0.0f }, // TL
-    {  1.0f,  1.0f,  1.0f,  0.0f }, // TR
-    {  1.0f, -1.0f,  1.0f,  1.0f }, // BR
-};
-const GLint indicies[] = { 0, 1, 2, 0, 2, 3 };
-
+GLuint FS_CoreFrameBuffer;
 
 SDL_Window    *m_window;
 SDL_GLContext  m_context;
@@ -244,23 +259,21 @@ GLuint FScreateTexture(int size, unsigned char* data) {
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     return tex_id;
 }
-}
 
 GLuint FS_generateTextureFBO(GLint target_fbo, int w, int h, TextureInfo *info) {
     GLint current_fbo;
-    glGetIntegerV(GL_FRAMEBUFFER_BINDING, &current_fbo);
+    glGetIntegerv(GL_FRAMEBUFFER_BINDING, &current_fbo);
 
     GLuint tex_id;
     glGenTextures(1, &tex_id);
-    glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, tex_id);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, size, size, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,     GL_CLAMP_TO_BORDER);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,     GL_CLAMP_TO_BORDER);
+    glTexImage2D(GL_TEXTURE_2D, 0,
+                 info->i_format, w, h, 0, info->format, info->type, NULL);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    if (target_fbo && info->attachment)
+        glFramebufferTexture2D(GL_FRAMEBUFFER, info->attachment, GL_TEXTURE_2D, tex_id, 0);
+    info->texture_id = tex_id;
 
     glBindFramebuffer(GL_FRAMEBUFFER, current_fbo);
     return tex_id;
@@ -320,29 +333,15 @@ int Initialize() {
         return 1;
     }
 
+    glEnable(GL_BLEND);
+    glEnable(GL_DEPTH_TEST);
+
     /* Initialize Shaders */
     GLint status;
     char err_buf[4096];
 
     glGenVertexArrays(1, &m_vao);
     glBindVertexArray(m_vao);
-
-    char* vert_shader_src = file_to_mem("core_screen.vert.glsl");
-    m_vert_shader = FScreateShader(GL_VERTEX_SHADER, vert_shader_src);
-    free(vert_shader_src);
-    if (m_vert_shader == -1) return 1;
-
-    char* frag_shader_src = file_to_mem("core_screen.frag.glsl");
-    m_frag_shader = FScreateShader(GL_FRAGMENT_SHADER, frag_shader_src);
-    free(frag_shader_src);
-    if (m_frag_shader == -1) return 1;
-
-    m_shader_prog = glCreateProgram();
-    glAttachShader(m_shader_prog, m_vert_shader);
-    glAttachShader(m_shader_prog, m_frag_shader);
-    glBindFragDataLocation(m_shader_prog, 0, "out_Color0");
-    glLinkProgram(m_shader_prog);
-    glUseProgram(m_shader_prog);
 
     get_exe_path(path, 65535);
     char* tmp = str_replace(path, "foxsnow.exe", "");
@@ -371,6 +370,23 @@ int Initialize() {
 
     PyRun_SimpleString("import time;import numpy;print(numpy.version.version)");
 
+    char* vert_shader_src = file_to_mem("default.vert.glsl");
+    m_vert_shader = FScreateShader(GL_VERTEX_SHADER, vert_shader_src);
+    free(vert_shader_src);
+    if (m_vert_shader == -1) return 1;
+
+    char* frag_shader_src = file_to_mem("default.frag.glsl");
+    m_frag_shader = FScreateShader(GL_FRAGMENT_SHADER, frag_shader_src);
+    free(frag_shader_src);
+    if (m_frag_shader == -1) return 1;
+
+    m_shader_prog = glCreateProgram();
+    glAttachShader(m_shader_prog, m_vert_shader);
+    glAttachShader(m_shader_prog, m_frag_shader);
+    glBindFragDataLocation(m_shader_prog, 0, "out_Color0");
+    glLinkProgram(m_shader_prog);
+    glUseProgram(m_shader_prog);
+
     FSloadOBJ("resources/teapot.obj", &teapot_vert_size,  &teapot_vertex_array,
                                       &teapot_index_size, &teapot_index_array);
         printf("index  | size = %d, pointer = %p | AT C\n", teapot_vert_size, teapot_index_array);
@@ -390,8 +406,91 @@ int Initialize() {
 
     // Bind vertex position attribute
     GLint pos_attr_loc = glGetAttribLocation(m_shader_prog, "fs_Vertex");
+    glEnableVertexAttribArray(pos_attr_loc);
+    glVertexAttribPointer(pos_attr_loc, 3, GL_FLOAT, GL_FALSE, 3*sizeof(GLfloat), (void*)0);
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+    /* FBO - Create FBO */
+    glGenFramebuffers(1, &FS_CoreFrameBuffer);
+    glBindFramebuffer(GL_FRAMEBUFFER, FS_CoreFrameBuffer);
+
+    /* FBO - Generate Texture */
+    for (int z=0; z < 4; z++)
+        FS_generateTextureFBO(
+            FS_CoreFrameBuffer,
+            current_resolution_x,
+            current_resolution_y,
+            &FS_CoreFrameBufferTexture[z]);
+    
+    GLenum err = glGetError();
+    if (err != GL_NO_ERROR) printf("ERROR - glError C: 0x%04X\n", err);
+
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE){
+        printf("FS GL : FRAMEBUFFER NOT COMPLETE");
+        exit(1);
+    }
+
+    err = glGetError();
+    if (err != GL_NO_ERROR) printf("ERROR - glError B: 0x%04X\n", err);
+
+    printf("TEX_ID_0 = %d\n", FS_CoreFrameBufferTexture[0].texture_id);
+    printf("TEX_ID_1 = %d\n", FS_CoreFrameBufferTexture[1].texture_id);
+    printf("TEX_ID_2 = %d\n", FS_CoreFrameBufferTexture[2].texture_id);
+    GLenum tmp_buf[] = {
+        GL_COLOR_ATTACHMENT0,
+        GL_COLOR_ATTACHMENT1,
+        GL_COLOR_ATTACHMENT2,
+    };
+    glDrawBuffers(3, tmp_buf);
+
+    err = glGetError();
+    if (err != GL_NO_ERROR) printf("ERROR - glError A: 0x%04X\n", err);
+
+    /* FBO - Setup Shader */
+    vert_shader_src = file_to_mem("core_screen.vert.glsl");
+    FS_CoreScreenVertShader = FScreateShader(GL_VERTEX_SHADER, vert_shader_src);
+    free(vert_shader_src);
+    if (FS_CoreScreenVertShader == -1) return 1;
+
+    frag_shader_src = file_to_mem("core_screen.frag.glsl");
+    FS_CoreScreenFragShader = FScreateShader(GL_FRAGMENT_SHADER, frag_shader_src);
+    free(frag_shader_src);
+    if (FS_CoreScreenFragShader == -1) return 1;
+
+    FS_CoreScreenShaderProgram = glCreateProgram();
+    glAttachShader(FS_CoreScreenShaderProgram, FS_CoreScreenVertShader);
+    glAttachShader(FS_CoreScreenShaderProgram, FS_CoreScreenFragShader);
+    glBindFragDataLocation(FS_CoreScreenShaderProgram, 0, "out_Color0");
+    glLinkProgram(FS_CoreScreenShaderProgram);
+    glUseProgram(FS_CoreScreenShaderProgram);
+
+    /* FBO - Initialize Geometry */
+    glGenBuffers(1, &FS_CoreScreenQuadVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, FS_CoreScreenQuadVAO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(FS_CoreScreenQuadVert)+sizeof(FS_CoreScreenQuadTexCoord), NULL, GL_STATIC_DRAW);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(FS_CoreScreenQuadVert), FS_CoreScreenQuadVert);
+    glBufferSubData(GL_ARRAY_BUFFER, sizeof(FS_CoreScreenQuadVert), sizeof(FS_CoreScreenQuadTexCoord), FS_CoreScreenQuadTexCoord);
+
+    err = glGetError();
+    if (err != GL_NO_ERROR) printf("ERROR - glError X: 0x%04X\n", err);
+
+    pos_attr_loc = glGetAttribLocation(FS_CoreScreenShaderProgram, "fs_Vertex");
     glVertexAttribPointer(pos_attr_loc, 3, GL_FLOAT, GL_FALSE, 3*sizeof(GLfloat), (void*)0);
     glEnableVertexAttribArray(pos_attr_loc);
+    
+    err = glGetError();
+    if (err != GL_NO_ERROR) printf("ERROR - glError Y: 0x%04X\n", err);
+
+    pos_attr_loc = glGetAttribLocation(FS_CoreScreenShaderProgram, "fs_MultiTexCoord0");
+    glVertexAttribPointer(pos_attr_loc, 2, GL_FLOAT, GL_FALSE, 2*sizeof(GLfloat), (void*)sizeof(FS_CoreScreenQuadVert));
+    glEnableVertexAttribArray(pos_attr_loc);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+
+    err = glGetError();
+    if (err != GL_NO_ERROR) printf("ERROR - glError Z: 0x%04X\n", err);
 
     // Bind vertex texture coordinate attribute
     // GLint tex_attr_loc = glGetAttribLocation(m_shader_prog, "fs_MultiTexCoord0");
@@ -401,6 +500,7 @@ int Initialize() {
     // /* Initialize textures */
     // GLuint screen_tex = FScreateTexture(256, logo_rgba);
     // glUniform1i(glGetUniformLocation(m_shader_prog, "tex_1"), 0);
+
     return 0;
 }
 
@@ -435,9 +535,29 @@ int FS_clean_up() {
  * Render a frame
  */
 int OGL_render_update() {
+    glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+    glBindFramebuffer(GL_FRAMEBUFFER, FS_CoreFrameBuffer);
+
     glClearColor(0.5f, 0.75f, 1.0f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
-    glDrawElements(GL_TRIANGLES, teapot_index_size, GL_UNSIGNED_INT, NULL);
+    glClearDepth(1.0);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    glUseProgram(m_shader_prog);
+    glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ebo);
+    glDrawElements(GL_TRIANGLES, teapot_index_size, GL_UNSIGNED_INT, 0);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    glClearColor(0.5f, 0.75f, 1.0f, 1.0f);
+    glClearDepth(1.0);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    glBindVertexArray(FS_CoreScreenQuadVAO);
+    glUseProgram(FS_CoreScreenShaderProgram);
+    glBindTexture(GL_TEXTURE_2D, FS_CoreFrameBufferTexture[0].texture_id);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+
     SDL_GL_SwapWindow(m_window);
     return 0;
 }
@@ -446,15 +566,16 @@ void SDL_onResize(int w, int h) {
     current_resolution_x = w;
     current_resolution_x = h;
 
-    glDeleteTextures(4, {
-        FS_CoreFrameBuffer[0].texture_id,
-        FS_CoreFrameBuffer[1].texture_id,
-        FS_CoreFrameBuffer[2].texture_id,
-        FS_CoreFrameBuffer[3].texture_id,
-    });
+    GLint tmp_tex_id[] = {
+        FS_CoreFrameBufferTexture[0].texture_id,
+        FS_CoreFrameBufferTexture[1].texture_id,
+        FS_CoreFrameBufferTexture[2].texture_id,
+        FS_CoreFrameBufferTexture[3].texture_id,
+    };
+    glDeleteTextures(4, tmp_tex_id);
 
     for (int z = 0; z < 4; z++) {
-        glGenTextures();
+        FS_generateTextureFBO(NULL, w, h, &FS_CoreFrameBufferTexture[z]);
     }
 
     printf("FS SDL : EVENT RESIZE %d %d\n",
