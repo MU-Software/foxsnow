@@ -3,6 +3,11 @@
     "files.associations": {
         "glew.h": "c",
         "fs_py_support.h": "c",
-        "python.h": "c"
+        "python.h": "c",
+        "stdio.h": "c",
+        "fs_opengl.h": "c",
+        "fs_stdfunc.h": "c",
+        "sdl.h": "c",
+        "stdbool.h": "c"
     }
 }

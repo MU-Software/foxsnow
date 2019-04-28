@@ -1,7 +1,4 @@
-#include <GL/glew.h>
-#include <Python/Python.h>
-
-#include "fs_py_support.h"
+#include "fs_py_loader_obj.h"
 
 GLfloat* FSloadOBJ(char* filename, int* vert_size, float** vert_arr, int** index_size, int* index_arr) {
     PyObject* args;

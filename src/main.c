@@ -1,12 +1,20 @@
-#define GLEW_STATIC
 #include <SDL2/SDL.h>
-#include <GL/glew.h>
 #include <Python/Python.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
 
+// #if !defined(__glew_h__)
+//     #include <GL/glew.h>
+// #endif
+#ifndef GLEW_STATIC
+    #define GLEW_STATIC
+#endif
+
+#include "fs_stdfunc.h"
+#include "fs_opengl.h"
+// #include "fs_datatype.h"
 #include "fs_py_loader_obj.h"
 
 #ifdef _WIN32
@@ -17,14 +25,6 @@ char* path[65535] = { 0 };
 char* path_python[65535] = { 0 };
 char* path_python_addon[65535] = { 0 };
 char* path_python_script[65535] = { 0 };
-
-typedef struct _TextureInfo {
-    GLint i_format;
-    GLint format;
-    GLenum type;
-    GLenum attachment;
-    GLuint texture_id;
-} TextureInfo;
 
 TextureInfo FS_CoreFrameBufferTexture[] = {
     {
@@ -106,202 +106,9 @@ bool mode_fullscreen = false;
 int Initialize();
 int OGL_render_update();
 int FS_clean_up();
-unsigned int HashCode();
-char* file_to_mem(char* path);
-GLuint FScreateShader(GLenum shader_type, char* src);
-GLuint FScreateTexture(int size, unsigned char* data);
-
-void GLAPIENTRY MessageCallback(GLenum source,
-                                GLenum type,
-                                GLuint id,
-                                GLenum severity,
-                                GLsizei length,
-                                const GLchar* message,
-                                const void* userParam ) {
-  fprintf( stderr, "GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s\n",
-           ( type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : "" ),
-            type, severity, message );
-}
 
 void console_clear() {
     printf("                                           \r");
-}
-unsigned int HashCode(const char *str) {
-    unsigned int hash = 0;
-    while (*str) {
-        hash = 65599 * hash + str[0];
-        str++;
-    }
-    return hash ^ (hash >> 16);
-}
-
-char* file_to_mem(char* path) {
-	char *str_storage = NULL;
-	FILE *fp = fopen(path, "r");
-	if (fp != NULL) {
-		if (fseek(fp, 0L, SEEK_END) == 0) {
-			/* Get the size of the file. */
-			long file_size = ftell(fp);
-			if (file_size == -1) {
-				printf("Error while calculating file size! C");
-				fclose(fp);
-				return 0;
-			} else if (!file_size) {
-				printf("File is empty!");
-				fclose(fp);
-				return 0;
-			}
-
-			str_storage = malloc(sizeof(char) * (file_size + 1));
-
-			if (fseek(fp, 0L, SEEK_SET)) {
-				printf("Error while calculating file size! B");
-				fclose(fp);
-				return 0;
-			}
-
-			/* Read the entire file into memory. */
-			size_t newLen = fread(str_storage, sizeof(char), file_size, fp);
-			if (ferror(fp) != 0) {
-				fputs("Error while reading file", stderr);
-			} else { str_storage[newLen++] = '\0'; /* Just to be safe. */ }
-		} else {
-				printf("Error while calculating file size! A");
-				fclose(fp);
-				return 0;
-		}
-		fclose(fp);
-	} else { printf("Cannot open file!"); return 0; }
-	return str_storage;
-}
-
-char* get_exe_path(char* path, int size) {
-
-    #ifdef _WIN32
-    GetModuleFileName(NULL, path, size);
-    #elif __linux__
-    readlink("/proc/self/exe", path, size);
-    #elif  __APPLE__ 
-    readlink("/proc/curproc/file", path, size);
-    #elif __FreeBSD__
-    readlink("/proc/curproc/file", path, size);
-    #endif
-
-    return path;
-}
-
-char* str_replace(char *orig, char *rep, char *with) {
-    char *result; // the return string
-    char *ins;    // the next insert point
-    char *tmp;    // varies
-    int len_rep;  // length of rep (the string to remove)
-    int len_with; // length of with (the string to replace rep with)
-    int len_front; // distance between rep and end of last rep
-    int count;    // number of replacements
-
-    // sanity checks and initialization
-    if (!orig || !rep)
-        return NULL;
-    len_rep = strlen(rep);
-    if (len_rep == 0)
-        return NULL; // empty rep causes infinite loop during count
-    if (!with)
-        with = "";
-    len_with = strlen(with);
-
-    // count the number of replacements needed
-    ins = orig;
-    for (count = 0; tmp = strstr(ins, rep); ++count) {
-        ins = tmp + len_rep;
-    }
-
-    tmp = result = malloc(strlen(orig) + (len_with - len_rep) * count + 1);
-
-    if (!result)
-        return NULL;
-
-    // first time through the loop, all the variable are set correctly
-    // from here on,
-    //    tmp points to the end of the result string
-    //    ins points to the next occurrence of rep in orig
-    //    orig points to the remainder of orig after "end of rep"
-    while (count--) {
-        ins = strstr(orig, rep);
-        len_front = ins - orig;
-        tmp = strncpy(tmp, orig, len_front) + len_front;
-        tmp = strcpy(tmp, with) + len_with;
-        orig += len_front + len_rep; // move to next "end of rep"
-    }
-    strcpy(tmp, orig);
-    return result;
-}
-
-GLuint FScreateShader(GLenum shader_type, char* src) {
-    GLuint tmp_sha = glCreateShader(shader_type);
-    GLint status;
-    char err_buf[4096], shader_type_str[16];
-    switch (shader_type) {
-        case GL_VERTEX_SHADER:          strcpy_s(&shader_type_str, 16, "Vertex ");    break;
-        case GL_FRAGMENT_SHADER:        strcpy_s(&shader_type_str, 16, "Fragment ");  break;
-        case GL_GEOMETRY_SHADER:        strcpy_s(&shader_type_str, 16, "Geometry ");  break;
-        case GL_TESS_CONTROL_SHADER:    strcpy_s(&shader_type_str, 16, "Tess-Ctrl "); break;
-        case GL_TESS_EVALUATION_SHADER: strcpy_s(&shader_type_str, 16, "Tess-Eval "); break;
-        case GL_COMPUTE_SHADER:         strcpy_s(&shader_type_str, 16, "Compute ");   break;
-        default: memset(&shader_type_str, 0, sizeof(shader_type_str));                break;
-    }
-
-    glShaderSource(tmp_sha, 1, &src, NULL);
-    glCompileShader(tmp_sha);
-    glGetShaderiv(tmp_sha, GL_COMPILE_STATUS, &status);
-    if (status != GL_TRUE) {
-        glGetShaderInfoLog(tmp_sha, sizeof(err_buf), NULL, err_buf);
-        err_buf[sizeof(err_buf)-1] = '\0';
-        fprintf(stderr, "%sShader compilation failed: %s\n", shader_type_str, err_buf);
-        return -1;
-    }
-
-    return tmp_sha;
-}
-
-GLuint FScreateTexture(int size, unsigned char* data) {
-    GLuint tex_id;
-    glGenTextures(1, &tex_id);
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, tex_id);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, size, size, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,     GL_CLAMP_TO_BORDER);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,     GL_CLAMP_TO_BORDER);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, size, size, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, data);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    return tex_id;
-}
-
-GLuint FS_generateTextureFBO(GLint target_fbo, int w, int h, TextureInfo *info) {
-    GLint current_fbo;
-    glGetIntegerv(GL_FRAMEBUFFER_BINDING, &current_fbo);
-
-    GLuint tex_id;
-    glGenTextures(1, &tex_id);
-    glBindTexture(GL_TEXTURE_2D, tex_id);
-    glTexImage2D(GL_TEXTURE_2D, 0,
-                 info->i_format, w, h, 0, info->format, info->type, NULL);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    if (target_fbo && info->attachment)
-        glFramebufferTexture2D(GL_FRAMEBUFFER, info->attachment, GL_TEXTURE_2D, tex_id, 0);
-    info->texture_id = tex_id;
-
-    glBindFramebuffer(GL_FRAMEBUFFER, current_fbo);
-    return tex_id;
-}
-GLuint FS_deleteTexture(GLint target_fbo, TextureInfo *info) {
-    GLuint tex_id = info->texture_id;
-    glFramebufferTexture2D(GL_FRAMEBUFFER, info->attachment, GL_TEXTURE_2D, 0, 0);
-    glDeleteTextures(1, &tex_id);
-    info->texture_id = 0;
 }
 
 /*
@@ -348,8 +155,8 @@ int Initialize() {
 
     // SDL_GL_SetSwapInterval(1); // Use VSYNC
 
-    // Initialize GL Extension Wrangler (GLEW)
-    glewExperimental = GL_TRUE; // Please expose OpenGL 3.x+ interfaces
+    // // Initialize GL Extension Wrangler (GLEW)
+    // glewExperimental = GL_TRUE; // Please expose OpenGL 3.x+ interfaces
     if (glewInit() != GLEW_OK) {
         fprintf(stderr, "Failed to init GLEW\n");
         SDL_GL_DeleteContext(m_context);
@@ -366,9 +173,11 @@ int Initialize() {
     glFrontFace(GL_CCW);
     glDisable(GL_DEPTH_CLAMP);
 
-    // During init, enable debug output
-    glEnable(GL_DEBUG_OUTPUT);
-    glDebugMessageCallback(MessageCallback, 0);
+    #ifndef NODEBUG
+        // During init, enable debug output
+        glEnable(GL_DEBUG_OUTPUT);
+        glDebugMessageCallback(MessageCallback, 0);
+    #endif
 
     /* Initialize Shaders */
     GLint status;
@@ -388,10 +197,6 @@ int Initialize() {
     strcat(path_python_addon, "Python_addon");
     strcpy_s(path_python_script, 65535, path);
     strcat(path_python_script, "Python_src");
-
-    // printf("%s\n", path);
-    // printf("%s\n", path_python);
-    // printf("%s\n", path_python_addon);
 
     SDL_setenv("PYTHONHOME", path_python, true);
     SDL_setenv("PYTHONPATH", path_python, true);
@@ -454,7 +259,7 @@ int Initialize() {
 
     /* FBO - Generate Texture */
     for (int z=0; z < 4; z++)
-        FS_generateTextureFBO(
+        FSgenerateTextureFBO(
             FS_CoreFrameBuffer,
             current_resolution_x,
             current_resolution_y,
@@ -589,7 +394,7 @@ int OGL_render_update() {
         int multi_scrn_tgt_x = current_resolution_x/3;
         int multi_scrn_tgt_y = current_resolution_y/3;
 
-        // 1X3
+        // Main
         glBindTexture(GL_TEXTURE_2D, FS_CoreFrameBufferTexture[0].texture_id);
         glViewport(0, multi_scrn_tgt_y+1, multi_scrn_tgt_x*2+1, multi_scrn_tgt_y*2);
         glDrawArrays(GL_TRIANGLES, 0, 6);
@@ -619,6 +424,7 @@ int OGL_render_update() {
         glViewport(multi_scrn_tgt_x+1, 0, multi_scrn_tgt_x, multi_scrn_tgt_y);
         glDrawArrays(GL_TRIANGLES, 0, 6);
     } else {
+        // Main only
         glBindTexture(GL_TEXTURE_2D, FS_CoreFrameBufferTexture[0].texture_id);
         glViewport(0, 0, current_resolution_x, current_resolution_y);
         glDrawArrays(GL_TRIANGLES, 0, 6);
@@ -647,7 +453,7 @@ void SDL_onResize(int w, int h) {
 
     /* FBO - Generate Texture */
     for (int z=0; z < 4; z++)
-        FS_generateTextureFBO(
+        FSgenerateTextureFBO(
             FS_CoreFrameBuffer,
             current_resolution_x,
             current_resolution_y,
@@ -663,9 +469,6 @@ void SDL_onResize(int w, int h) {
            current_resolution_x, current_resolution_y);
 }
 
-/*
- * Program entry point
- */
 int main(int argc, char *argv[]) {
     bool should_run = true, cap = true;
     double fps = 0.0f;

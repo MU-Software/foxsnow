@@ -1,4 +1,4 @@
-#include <Python/Python.h>
+#include "fs_py_support.h"
 
 int FS_PYTHON_FUNC(char* module, char* function, PyObject* argument, PyObject* pValue) {
     PyObject *pName, *pModule, *pFunc;
