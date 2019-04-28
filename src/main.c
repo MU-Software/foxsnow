@@ -8,7 +8,6 @@
 #include <stdbool.h>
 
 #include "fs_py_loader_obj.h"
-#include "logo.h"
 
 #ifdef _WIN32
     #include "windows.h"
