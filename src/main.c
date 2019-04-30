@@ -21,6 +21,24 @@
     #include "windows.h"
 #endif
 
+#define NK_INCLUDE_FIXED_TYPES
+#define NK_INCLUDE_STANDARD_IO
+#define NK_INCLUDE_STANDARD_VARARGS
+#define NK_INCLUDE_DEFAULT_ALLOCATOR
+#define NK_INCLUDE_VERTEX_BUFFER_OUTPUT
+#define NK_INCLUDE_FONT_BAKING
+#define NK_INCLUDE_DEFAULT_FONT
+#define NK_IMPLEMENTATION
+#define NK_SDL_GL3_IMPLEMENTATION
+#include "nuklear.h"
+#include "nuklear_sdl_gl3.h"
+
+#define WINDOW_WIDTH 1200
+#define WINDOW_HEIGHT 800
+
+#define MAX_VERTEX_MEMORY 512 * 1024
+#define MAX_ELEMENT_MEMORY 128 * 1024
+
 char* path[65535] = { 0 };
 char* path_python[65535] = { 0 };
 char* path_python_addon[65535] = { 0 };
@@ -102,6 +120,9 @@ GLuint         m_shader_prog;
 bool mode_multiple_viewport = false;
 bool mode_wireframe = false;
 bool mode_fullscreen = false;
+
+struct nk_context *ctx;
+struct nk_colorf bg;
 
 int Initialize();
 int OGL_render_update();
@@ -333,6 +354,7 @@ int Initialize() {
     GLenum err = glGetError();
     if (err != GL_NO_ERROR) printf("ERROR - glError 8: 0x%04X\n", err);
 
+    // ctx = nk_sdl_init(m_window);
     return 0;
 }
 
