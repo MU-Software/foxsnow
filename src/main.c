@@ -33,9 +33,6 @@
 #include "nuklear.h"
 #include "nuklear_sdl_gl3.h"
 
-#define WINDOW_WIDTH  800
-#define WINDOW_HEIGHT 600
-
 #define MAX_VERTEX_MEMORY 512 * 1024
 #define MAX_ELEMENT_MEMORY 128 * 1024
 
@@ -361,7 +358,7 @@ int Initialize() {
         struct nk_font *roboto  = nk_font_atlas_add_from_file(atlas, "./resources/font/Roboto-Regular.ttf", 16, 0);
         nk_sdl_font_stash_end();
         
-        nk_style_load_all_cursors(ctx, atlas->cursors);
+        //nk_style_load_all_cursors(ctx, atlas->cursors);
         nk_style_set_font(ctx, &roboto->handle);
     }
 
@@ -467,7 +464,7 @@ int OGL_render_update() {
     GLenum err = glGetError();
     if (err != GL_NO_ERROR) printf("ERROR WHILE RENDER - glError : 0x%04X\n", err);
 
-    nk_sdl_render(NK_ANTI_ALIASING_OFF, MAX_VERTEX_MEMORY, MAX_ELEMENT_MEMORY);
+    nk_sdl_render(NK_ANTI_ALIASING_ON, MAX_VERTEX_MEMORY, MAX_ELEMENT_MEMORY);
 
     SDL_GL_SwapWindow(m_window);
     return 0;
@@ -518,6 +515,7 @@ int main(int argc, char *argv[]) {
 
         bg.r = 0.10f, bg.g = 0.18f, bg.b = 0.24f, bg.a = 1.0f;
         SDL_Event event;
+        nk_input_begin(ctx);
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE) {
                 should_run = false;
@@ -545,34 +543,29 @@ int main(int argc, char *argv[]) {
         }
         nk_input_end(ctx);
 
-        if (nk_begin(ctx, "Demo", nk_rect(50, 50, 230, 250),
+        if (nk_begin(ctx, "Interactive Console", nk_rect(30, 70, 480, 320),
             NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
             NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE)) {
-            enum {EASY, HARD};
-            static int op = EASY;
-            static int property = 20;
 
-            nk_layout_row_static(ctx, 30, 80, 1);
-            if (nk_button_label(ctx, "button"))
-                printf("button pressed!\n");
-            nk_layout_row_dynamic(ctx, 30, 2);
-            if (nk_option_label(ctx, "easy", op == EASY)) op = EASY;
-            if (nk_option_label(ctx, "hard", op == HARD)) op = HARD;
-            nk_layout_row_dynamic(ctx, 22, 1);
-            nk_property_int(ctx, "Compression:", 0, &property, 100, 10, 1);
+            static const float ratio[] = {0.9f, 0.1f};
+            static char box_buffer[512];
+            static int box_len = 0;
+            static char text[64];
+            static int text_len;
+            nk_flags active;
+            // nk_window_get_size(ctx);
 
-            nk_layout_row_dynamic(ctx, 20, 1);
-            nk_label(ctx, "background:", NK_TEXT_LEFT);
-            nk_layout_row_dynamic(ctx, 25, 1);
-            if (nk_combo_begin_color(ctx, nk_rgb_cf(bg), nk_vec2(nk_widget_width(ctx),400))) {
-                nk_layout_row_dynamic(ctx, 120, 1);
-                bg = nk_color_picker(ctx, bg, NK_RGBA);
-                nk_layout_row_dynamic(ctx, 25, 1);
-                bg.r = nk_propertyf(ctx, "#R:", 0, bg.r, 1.0f, 0.01f,0.005f);
-                bg.g = nk_propertyf(ctx, "#G:", 0, bg.g, 1.0f, 0.01f,0.005f);
-                bg.b = nk_propertyf(ctx, "#B:", 0, bg.b, 1.0f, 0.01f,0.005f);
-                bg.a = nk_propertyf(ctx, "#A:", 0, bg.a, 1.0f, 0.01f,0.005f);
-                nk_combo_end(ctx);
+            nk_layout_row_dynamic(ctx, 0.0f, 1);
+            nk_edit_string(ctx, NK_EDIT_BOX, box_buffer, &box_len, 512, nk_filter_default);
+
+            nk_layout_row(ctx, NK_DYNAMIC, 25, 2, ratio);
+            active = nk_edit_string(ctx, NK_EDIT_FIELD|NK_EDIT_SIG_ENTER, text, &text_len, 64,  nk_filter_ascii);
+            if (nk_button_label(ctx, "Submit") || (active & NK_EDIT_COMMITED)) {
+                text[text_len] = '\n';
+                text_len++;
+                memcpy(&box_buffer[box_len], &text, (nk_size)text_len);
+                box_len += text_len;
+                text_len = 0;
             }
         }
         nk_end(ctx);
