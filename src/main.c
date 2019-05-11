@@ -117,6 +117,7 @@ GLuint         m_shader_prog;
 bool mode_multiple_viewport = false;
 bool mode_wireframe = false;
 bool mode_fullscreen = false;
+bool mode_console = false;
 
 struct nk_context *ctx;
 struct nk_colorf bg;
@@ -360,6 +361,48 @@ int Initialize() {
         
         //nk_style_load_all_cursors(ctx, atlas->cursors);
         nk_style_set_font(ctx, &roboto->handle);
+
+        ctx->style.window.background = nk_rgba(38,38,38,128);
+        ctx->style.window.header.normal = nk_style_item_color(nk_rgba(38,38,38,128));
+        ctx->style.window.header.hover  = nk_style_item_color(nk_rgba(38,38,38,192));
+        ctx->style.window.header.active = nk_style_item_color(nk_rgba(38,38,38,224));
+        ctx->style.window.header.minimize_button.normal = nk_style_item_color(nk_rgba(38,38,38,0));
+        ctx->style.window.header.minimize_button.hover  = nk_style_item_color(nk_rgba(38,38,38,0));
+        ctx->style.window.header.minimize_button.active = nk_style_item_color(nk_rgba(38,38,38,0));
+        ctx->style.window.header.minimize_button.border_color = nk_rgba(38,38,38,224);
+        ctx->style.window.header.label_active = nk_rgb(212,212,212);
+        ctx->style.window.fixed_background = nk_style_item_color(nk_rgba(38,38,38,192));
+        ctx->style.window.border_color = nk_rgb(18,86,133);
+        // ctx->style.window.contextual_border_color = nk_rgb(255,165,0);
+        // ctx->style.window.menu_border_color = nk_rgb(255,165,0);
+        // ctx->style.window.group_border_color = nk_rgb(255,165,0);
+        // ctx->style.window.tooltip_border_color = nk_rgb(255,165,0);
+        // ctx->style.window.scrollbar_size = nk_vec2(16,16);
+        // ctx->style.window.border_color = nk_rgba(0,0,0,0);
+        // ctx->style.window.border = 1;
+
+        ctx->style.button.normal = nk_style_item_color(nk_rgba(38,38,38,0));
+        ctx->style.button.hover = nk_style_item_color(nk_rgba(38,38,38,192));
+        ctx->style.button.border_color = nk_rgb(0,122,204);
+        ctx->style.button.text_normal = nk_rgb(212,212,212);
+        ctx->style.button.text_hover = nk_rgb(212,212,212);
+        ctx->style.button.text_active = nk_rgb(212,212,212);
+
+        ctx->style.text.color = nk_rgb(212,212,212);
+
+        ctx->style.edit.normal = nk_style_item_color(nk_rgba(38,38,38,192));
+        ctx->style.edit.hover  = nk_style_item_color(nk_rgba(38,38,38,192));
+        ctx->style.edit.active = nk_style_item_color(nk_rgba(38,38,38,192));
+        ctx->style.edit.border_color = nk_rgb(18,86,133);
+        ctx->style.edit.text_normal = nk_rgb(212,212,212);
+        ctx->style.edit.text_hover  = nk_rgb(212,212,212);
+        ctx->style.edit.text_active = nk_rgb(212,212,212);
+        ctx->style.edit.selected_normal = nk_rgb(212,212,212);
+        ctx->style.edit.selected_hover  = nk_rgb(212,212,212);
+        ctx->style.edit.selected_text_normal = nk_rgb(212,212,212);
+        ctx->style.edit.selected_text_hover  = nk_rgb(212,212,212);
+        // ctx->style.button.active = nk_style_item_color(nk_rgb(220,10,0));
+        // ctx->style.button.text_background = nk_rgb(0,0,0);
     }
 
     return 0;
@@ -503,7 +546,7 @@ void SDL_onResize(int w, int h) {
 }
 
 int main(int argc, char *argv[]) {
-    bool should_run = true, cap = true;
+    bool should_run = true;
     double fps = 0.0f;
     unsigned long long frame = 0, start_tick = 0;
 
@@ -525,50 +568,65 @@ int main(int argc, char *argv[]) {
                 SDL_onResize(event.window.data1, event.window.data2);
             }
             else if (event.type == SDL_KEYDOWN) {
-                if (event.key.keysym.sym == SDLK_F12) cap = !cap;
-                else if (event.key.keysym.sym == SDLK_ESCAPE) should_run = false;
-                else if (event.key.keysym.sym == SDLK_w) mode_wireframe  = !mode_wireframe;
-                else if (event.key.keysym.sym == SDLK_f) {
-                    // SDL_WINDOW_FULLSCREEN will do 'real' fullscreen with video mode change,
-                    // while SDL_WINDOW_FULLSCREEN_DESKTOP will do "fake" fullscreen
-                    // that takes the size of the desktop.
-                    mode_fullscreen = !mode_fullscreen;
+                if (event.key.keysym.sym == SDLK_BACKQUOTE) mode_console = !mode_console;
+                
+                if (!mode_console) {
+                    if (event.key.keysym.sym == SDLK_w) mode_wireframe  = !mode_wireframe;
+                    else if (event.key.keysym.sym == SDLK_f) {
+                        // SDL_WINDOW_FULLSCREEN will do 'real' fullscreen with video mode change,
+                        // while SDL_WINDOW_FULLSCREEN_DESKTOP will do "fake" fullscreen
+                        // that takes the size of the desktop.
+                        mode_fullscreen = !mode_fullscreen;
 
-                    SDL_SetWindowFullscreen(m_window, (mode_fullscreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0));
-                    SDL_onResize(0, 0);
+                        SDL_SetWindowFullscreen(m_window, (mode_fullscreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0));
+                        SDL_onResize(0, 0);
+                    }
+                    else if (event.key.keysym.sym == SDLK_TAB) mode_multiple_viewport = !mode_multiple_viewport;
+                    else if (event.key.keysym.sym == SDLK_ESCAPE) should_run = false;
                 }
-                else if (event.key.keysym.sym == SDLK_TAB) mode_multiple_viewport = !mode_multiple_viewport;
             }
             nk_sdl_handle_event(&event);
         }
         nk_input_end(ctx);
 
-        if (nk_begin(ctx, "Interactive Console", nk_rect(30, 70, 480, 320),
-            NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
-            NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE)) {
+        if (mode_console) {
+            if (nk_begin(ctx, "Interactive Console", nk_rect(30, 70, 480, 320),
+                NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
+                NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE)) {
 
-            static const float ratio[] = {0.9f, 0.1f};
-            static char box_buffer[512];
-            static int box_len = 0;
-            static char text[64];
-            static int text_len;
-            nk_flags active;
-            // nk_window_get_size(ctx);
+                static const float ratio[] = {0.9f, 0.1f};
+                static char box_buffer[512];
+                static int box_len = 0;
+                static char text[64];
+                static int text_len;
+                nk_flags active;
+                float window_height = nk_window_get_height(ctx);
+                float window_width  = nk_window_get_width(ctx);
 
-            nk_layout_row_dynamic(ctx, 0.0f, 1);
-            nk_edit_string(ctx, NK_EDIT_BOX, box_buffer, &box_len, 512, nk_filter_default);
+                nk_layout_row_dynamic(ctx, window_height - 90, 1);
+                nk_edit_string(ctx, NK_EDIT_BOX, box_buffer, &box_len, 512, nk_filter_default);
 
-            nk_layout_row(ctx, NK_DYNAMIC, 25, 2, ratio);
-            active = nk_edit_string(ctx, NK_EDIT_FIELD|NK_EDIT_SIG_ENTER, text, &text_len, 64,  nk_filter_ascii);
-            if (nk_button_label(ctx, "Submit") || (active & NK_EDIT_COMMITED)) {
-                text[text_len] = '\n';
-                text_len++;
-                memcpy(&box_buffer[box_len], &text, (nk_size)text_len);
-                box_len += text_len;
-                text_len = 0;
+                nk_layout_row_begin(ctx, NK_STATIC, 25, 3);
+                nk_layout_row_push(ctx, 20);
+                nk_label(ctx, ">>>", NK_TEXT_LEFT);
+
+                nk_layout_row_push(ctx, window_width - 125);
+                active = nk_edit_string(ctx, NK_EDIT_FIELD|NK_EDIT_SIG_ENTER, text, &text_len, 64,  nk_filter_ascii);
+
+                nk_layout_row_push(ctx, 69);
+                if (nk_button_label(ctx, "Submit") || (active & NK_EDIT_COMMITED)) {
+                    text[text_len] = '\n';
+                    text_len++;
+                    memcpy(&box_buffer[box_len], &text, (nk_size)text_len);
+                    box_len += text_len;
+                    text_len = 0;
+                }
+                
+                nk_layout_row_end(ctx);
+
             }
+            nk_end(ctx);
         }
-        nk_end(ctx);
 
         OGL_render_update();
 
