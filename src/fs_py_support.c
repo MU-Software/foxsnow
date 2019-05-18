@@ -19,16 +19,16 @@ bool FS_PyConsole_init() {
         return 1;
     }
 
-    pConPushMtd = PyObject_GetAttrString(pConObj, "push");
-    if (pConPushMtd == NULL || !PyCallable_Check(pConModule)) {
-        // Console push method get failure
-        fprintf(stderr, "Failed to load Python Console\n");
-        return 1;
-    }
+    // pConPushMtd = PyObject_GetAttrString(pConObj, "push");
+    // if (pConPushMtd == NULL || !PyCallable_Check(pConModule)) {
+    //     // Console push method get failure
+    //     fprintf(stderr, "Failed to load Python Console\n");
+    //     return 1;
+    // }
 }
 
 PyObject* FS_PyConsole_push(char* input_str) {
-    if (PyCallable_Check(pConModule)) {
+    if (pConModule != NULL || pConObj != NULL) {
         PyObject *result;
         PyObject *args = PyTuple_New(1);
         PyObject *tmp_input_str = PyUnicode_FromString(input_str);
@@ -38,10 +38,12 @@ PyObject* FS_PyConsole_push(char* input_str) {
                 Py_DECREF(tmp_input_str);
                 return NULL;
         }
+        PyObject *tmp_mtd_str = PyUnicode_FromString((char*)"push");
 
-        result = PyObject_CallObject(pConPushMtd, args);
+        result = PyObject_CallMethodObjArgs(pConObj, tmp_mtd_str, args);
         Py_DECREF(args);
         Py_DECREF(tmp_input_str);
+        if (result == NULL) fprintf(stderr, "Bad Console Push Result\n");
 
         if (PyErr_Occurred()) {
             PyErr_Print();
@@ -51,17 +53,9 @@ PyObject* FS_PyConsole_push(char* input_str) {
         }
         return result;
     } else { // Module, Console Object, Push method failure        
-        if (pConModule == NULL || pConObj == NULL) {
-            fprintf(stderr,
-                    "Python console push called before %s initialize\n",
-                    (pConModule != NULL ? "Console Object" : "Console Module"));
-            return NULL;
-        } else if (pConPushMtd == NULL) {
-            fprintf(stderr, "Python console push method did not initialized\n");
-            return NULL;
-        } else {
-            fprintf(stderr, "Python console push method cannot be called, FATAL_ERROR_CONSOLE\n");
-            return NULL;
-        }
+        fprintf(stderr,
+                "Python console push called before %s initialize\n",
+                (pConModule != NULL ? "Console Object" : "Console Module"));
+        return NULL;
     }
 }

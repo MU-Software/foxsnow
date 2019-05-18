@@ -1,5 +1,5 @@
 #include <SDL2/SDL.h>
-// #include <Python/Python.h>
+#include <Python/Python.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -599,7 +599,7 @@ int main(int argc, char *argv[]) {
                 NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE)) {
 
                 static const float ratio[] = {0.9f, 0.1f};
-                static char box_buffer[INT_MAX];
+                static char box_buffer[65535];
                 static int box_len = 0;
                 static char text[128];
                 static int text_len;
@@ -613,7 +613,7 @@ int main(int argc, char *argv[]) {
 
                 nk_layout_row_begin(ctx, NK_STATIC, 25, 3);
                 nk_layout_row_push(ctx, 20);
-                nk_label(ctx, (py_con_continue ? ">>>" : "..."), NK_TEXT_LEFT);
+                nk_label(ctx, (py_con_continue ? "..." : ">>>"), NK_TEXT_LEFT);
 
                 nk_layout_row_push(ctx, window_width - 125);
                 active = nk_edit_string(ctx, NK_EDIT_FIELD|NK_EDIT_SIG_ENTER, text, &text_len, 64,  nk_filter_ascii);
