@@ -1,3 +1,5 @@
+#include <stdbool.h>
 #include <Python/Python.h>
 
-int FS_PYTHON_FUNC(char* module, char* function, PyObject* argument, PyObject* pValue);
+bool FS_PyConsole_init();
+PyObject* FS_PyConsole_push(char* input_str);

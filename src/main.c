@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include <limits.h>
 
 // #if !defined(__glew_h__)
 //     #include <GL/glew.h>
@@ -228,6 +229,9 @@ int Initialize() {
     PyList_Append(path, PyUnicode_FromString(path_python_script));
 
     PyRun_SimpleString("import time;import numpy;print(numpy.version.version)");
+    if (FS_PyConsole_init()) {
+        fprintf(stderr, "Initialize Python Console Failed\n");
+    }
 
     char* vert_shader_src = file_to_mem("default.vert.glsl");
     m_vert_shader = FScreateShader(GL_VERTEX_SHADER, vert_shader_src);
@@ -595,9 +599,9 @@ int main(int argc, char *argv[]) {
                 NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE)) {
 
                 static const float ratio[] = {0.9f, 0.1f};
-                static char box_buffer[512];
+                static char box_buffer[INT_MAX];
                 static int box_len = 0;
-                static char text[64];
+                static char text[128];
                 static int text_len;
                 nk_flags active;
                 float window_height = nk_window_get_height(ctx);

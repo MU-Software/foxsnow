@@ -67,3 +67,6 @@ if __name__ == '__main__':
 			print(error_response)
 			continue
 		print(response)
+else:
+	fs_py_con = FS_Python_Interpreter(globals())
+	fs_py_con_end, fs_py_con_res, fs_py_con_err = None, None, None
