@@ -1,5 +1,5 @@
 #include <SDL2/SDL.h>
-#include <Python/Python.h>
+// #include <Python/Python.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -603,6 +603,7 @@ int main(int argc, char *argv[]) {
                 static int box_len = 0;
                 static char text[128];
                 static int text_len;
+                static bool py_con_continue = false;
                 nk_flags active;
                 float window_height = nk_window_get_height(ctx);
                 float window_width  = nk_window_get_width(ctx);
@@ -612,20 +613,26 @@ int main(int argc, char *argv[]) {
 
                 nk_layout_row_begin(ctx, NK_STATIC, 25, 3);
                 nk_layout_row_push(ctx, 20);
-                nk_label(ctx, ">>>", NK_TEXT_LEFT);
+                nk_label(ctx, (py_con_continue ? ">>>" : "..."), NK_TEXT_LEFT);
 
                 nk_layout_row_push(ctx, window_width - 125);
                 active = nk_edit_string(ctx, NK_EDIT_FIELD|NK_EDIT_SIG_ENTER, text, &text_len, 64,  nk_filter_ascii);
 
                 nk_layout_row_push(ctx, 69);
                 if (nk_button_label(ctx, "Submit") || (active & NK_EDIT_COMMITED)) {
-                    text[text_len] = '\n';
-                    text_len++;
-                    memcpy(&box_buffer[box_len], &text, (nk_size)text_len);
-                    box_len += text_len;
-                    text_len = 0;
+                    PyObject *result = FS_PyConsole_push(text[text_len]);
+                    py_con_continue = PyObject_IsTrue(PyTuple_GetItem(result, 0));
+                    PyObject *tmp = PyUnicode_AsASCIIString(PyTuple_GetItem(result, 0));
+                    if (tmp == NULL) fprintf(stderr, "Error while parsing string from returned tuple from console\n");
+                    else {
+                        char* c_str = PyByteArray_AsString(tmp);
+                        text_len = strlen(c_str);
+                        memcpy(&box_buffer[box_len], &c_str, (nk_size)text_len);
+                        box_len += text_len;
+                        text_len = 0;
+                    }
+                    Py_XDECREF(tmp);
                 }
-                
                 nk_layout_row_end(ctx);
 
             }

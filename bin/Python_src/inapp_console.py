@@ -61,8 +61,7 @@ if __name__ == '__main__':
 	app = FS_Python_Interpreter(globals())
 	no_end, response, error_response = None, None, None
 	while True:
-		print(app.ps1 if not no_end else app.ps2, end='')
-		no_end, response, error_response = app.push(input())
+		no_end, response, error_response = app.push(input(app.ps1 if not no_end else app.ps2))
 		if error_response:
 			print(error_response)
 			continue
