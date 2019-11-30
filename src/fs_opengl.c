@@ -1,5 +1,12 @@
 #include "fs_opengl.h"
 
+extern FS_GL_VERSION FS_GL_VERSION_LIST[] = {
+    {4, 5}, {4, 4}, {4, 3}, {4, 2}, {4, 1}, {4, 0},
+    {3, 3}, {3, 2}, {3, 1}, {3, 0},
+    {2, 1}, {2, 0}
+};
+FS_GL_VERSION_LIST_LEN = COUNT_OF(FS_GL_VERSION_LIST);
+
 void GLAPIENTRY MessageCallback(GLenum source,
                                 GLenum type,
                                 GLuint id,

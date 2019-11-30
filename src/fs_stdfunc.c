@@ -11,13 +11,17 @@ unsigned int HashCode(const char *str) {
 
 char* get_exe_path(char* path, int size) {
 
-    #ifdef _WIN32
+    #ifdef _WIN32 //MINGW32
+    printf("OS : Windows\n");
     GetModuleFileName(NULL, path, size);
     #elif __linux__
+    printf("OS : Linux\n");
     readlink("/proc/self/exe", path, size);
     #elif  __APPLE__ 
+    printf("OS : macOS\n");
     readlink("/proc/curproc/file", path, size);
     #elif __FreeBSD__
+    printf("OS : FreeBSD\n");
     readlink("/proc/curproc/file", path, size);
     #endif
 

@@ -12,6 +12,16 @@
 
 #include "fs_datatype.h"
 
+#define COUNT_OF(x) ((sizeof(x)/sizeof(0[x])) / ((size_t)(!(sizeof(x) % sizeof(0[x])))))
+
+typedef struct _FS_GL_VERSION {
+    int major;
+    int minor;
+} FS_GL_VERSION;
+
+extern FS_GL_VERSION FS_GL_VERSION_LIST[];
+int FS_GL_VERSION_LIST_LEN;
+
 void GLAPIENTRY MessageCallback(GLenum source,
                                 GLenum type,
                                 GLuint id,

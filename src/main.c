@@ -98,6 +98,11 @@ GLuint FS_CoreScreenVertShader;
 GLuint FS_CoreScreenFragShader;
 GLuint FS_CoreScreenShaderProgram;
 
+int TARGET_GL_MAJOR_VERSION = 0;
+int TARGET_GL_MINOR_VERSION = 0;
+bool NUKLEAR_ENABLE = FALSE;
+bool PYTHON_ENABLE = TRUE;
+
 const int FPS_LIMIT = 60;
 int current_resolution_x = 800;
 int current_resolution_y = 600;
@@ -158,20 +163,43 @@ int Initialize() {
         return 1;
     }
 
+
+    printf("DRIVER GL INFO : Version %s,\n", glGetString(GL_VERSION));
+    printf("DRIVER GL INFO : Shader Version %s,\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
+    printf("DRIVER GL INFO : Vendor %s,\n", glGetString(GL_VENDOR));
+    printf("DRIVER GL INFO : Renderer %s\n", glGetString(GL_RENDERER));
     // Initialize rendering context
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
     SDL_GL_SetAttribute(
         SDL_GL_CONTEXT_PROFILE_MASK,
         SDL_GL_CONTEXT_PROFILE_CORE);
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+    int TARGET_GL_VERSION_INDEX = 0;
+    for(TARGET_GL_VERSION_INDEX; TARGET_GL_VERSION_INDEX <= FS_GL_VERSION_LIST_LEN; TARGET_GL_VERSION_INDEX++) {
+        TARGET_GL_MAJOR_VERSION = FS_GL_VERSION_LIST[TARGET_GL_VERSION_INDEX].major;
+        TARGET_GL_MINOR_VERSION = FS_GL_VERSION_LIST[TARGET_GL_VERSION_INDEX].minor;
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, TARGET_GL_MAJOR_VERSION);
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, TARGET_GL_MINOR_VERSION);
 
-    m_context = SDL_GL_CreateContext(m_window);
+        m_context = SDL_GL_CreateContext(m_window);
+        if (m_context == NULL) {
+            printf("Failed to create GL context on GL Version %d.%d\n",
+            TARGET_GL_MAJOR_VERSION, TARGET_GL_MINOR_VERSION);
+        }
+        else break;
+    }
     if (m_context == NULL) {
-        fprintf(stderr, "Failed to create GL context\n");
+        fprintf(stderr, "Failed to create GL context(TOTAL_FAILURE)\n");
         SDL_DestroyWindow(m_window);
         SDL_Quit();
         return 1;
+    }
+    printf("Created GL context successfully on GL %d.%d.\n",
+           TARGET_GL_MAJOR_VERSION, TARGET_GL_MINOR_VERSION);
+
+    if (TARGET_GL_MAJOR_VERSION >= 3) NUKLEAR_ENABLE = TRUE;
+    else {
+        NUKLEAR_ENABLE = FALSE;
+        printf("NUKLEAR disabled due to low OpenGL Version");
     }
 
     // SDL_GL_SetSwapInterval(1); // Use VSYNC
@@ -193,19 +221,16 @@ int Initialize() {
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glFrontFace(GL_CCW);
     glDisable(GL_DEPTH_CLAMP);
+    printf("Set GL successfully.\n");
 
     #ifndef NODEBUG
         // During init, enable debug output
         glEnable(GL_DEBUG_OUTPUT);
-        glDebugMessageCallback(MessageCallback, 0);
+        if (TARGET_GL_MAJOR_VERSION >= 4 && TARGET_GL_MINOR_VERSION >= 3){
+            printf("Enable glDeugMessageCallback\n");
+            glDebugMessageCallback(MessageCallback, 0);
+        }
     #endif
-
-    /* Initialize Shaders */
-    GLint status;
-    char err_buf[4096];
-
-    glGenVertexArrays(1, &m_vao);
-    glBindVertexArray(m_vao);
 
     get_exe_path(path, 65535);
     char* tmp = str_replace(path, "foxsnow.exe", "");
@@ -221,7 +246,9 @@ int Initialize() {
 
     SDL_setenv("PYTHONHOME", path_python, true);
     SDL_setenv("PYTHONPATH", path_python, true);
+    printf("Set PATH successfully.\n");
     Py_Initialize();
+    printf("Inited Python successfully.\n");
 
     PyObject *sys = PyImport_ImportModule("sys");
     PyObject *path = PyObject_GetAttrString(sys, "path");
@@ -232,6 +259,14 @@ int Initialize() {
     if (FS_PyConsole_init()) {
         fprintf(stderr, "Initialize Python Console Failed\n");
     }
+
+    /* Initialize Shaders */
+    GLint status;
+    char err_buf[4096];
+
+    glGenVertexArrays(1, &m_vao);
+    glBindVertexArray(m_vao);
+    printf("Binded default VAO successfully.\n");
 
     char* vert_shader_src = file_to_mem("default.vert.glsl");
     m_vert_shader = FScreateShader(GL_VERTEX_SHADER, vert_shader_src);
