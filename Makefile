@@ -1,5 +1,5 @@
 CC		:= gcc
-C_FLAGS := -w#-Wall -Wextra
+C_FLAGS := -g -w#-Wall -Wextra
 
 BIN		:= bin
 SRC		:= src

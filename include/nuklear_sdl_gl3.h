@@ -69,7 +69,9 @@ static struct nk_sdl {
 #ifdef __APPLE__
   #define NK_SHADER_VERSION "#version 150\n"
 #else
-  #define NK_SHADER_VERSION "#version 300 es\n"
+  #define NK_SHADER_VERSION "#version 130\n"
+  //Original was below.
+  //#define NK_SHADER_VERSION "#version 300 es\n"
 #endif
 NK_API void
 nk_sdl_device_create(void)
@@ -99,6 +101,9 @@ nk_sdl_device_create(void)
         "   Out_Color = Frag_Color * texture(Texture, Frag_UV.st);\n"
         "}\n";
 
+    char log_arr[4096] = { 0 };
+    int len_log_arr;
+    
     struct nk_sdl_device *dev = &sdl.ogl;
     nk_buffer_init_default(&dev->cmds);
     dev->prog = glCreateProgram();
@@ -108,14 +113,23 @@ nk_sdl_device_create(void)
     glShaderSource(dev->frag_shdr, 1, &fragment_shader, 0);
     glCompileShader(dev->vert_shdr);
     glCompileShader(dev->frag_shdr);
+
     glGetShaderiv(dev->vert_shdr, GL_COMPILE_STATUS, &status);
+    glGetShaderInfoLog(dev->vert_shdr, 4096, &len_log_arr, log_arr); 
+    if (status == GL_TRUE) printf("%s\n", log_arr);
     assert(status == GL_TRUE);
+
     glGetShaderiv(dev->frag_shdr, GL_COMPILE_STATUS, &status);
+    glGetShaderInfoLog(dev->frag_shdr, 4096, &len_log_arr, log_arr); 
+    if (status == GL_TRUE) printf("%s\n", log_arr);
     assert(status == GL_TRUE);
+
     glAttachShader(dev->prog, dev->vert_shdr);
     glAttachShader(dev->prog, dev->frag_shdr);
     glLinkProgram(dev->prog);
     glGetProgramiv(dev->prog, GL_LINK_STATUS, &status);
+    glGetProgramInfoLog(dev->prog, 4096, &len_log_arr, log_arr); 
+    if (status == GL_TRUE) printf("%s\n", log_arr);
     assert(status == GL_TRUE);
 
     dev->uniform_tex = glGetUniformLocation(dev->prog, "Texture");
