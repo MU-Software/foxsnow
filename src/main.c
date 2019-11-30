@@ -17,6 +17,7 @@
 #include "fs_opengl.h"
 // #include "fs_datatype.h"
 #include "fs_py_loader_obj.h"
+#include "3d_obj.h"
 
 #ifdef _WIN32
     #include "windows.h"
@@ -285,11 +286,15 @@ int Initialize() {
     glLinkProgram(m_shader_prog);
     glUseProgram(m_shader_prog);
 
-    FSloadOBJ("resources/teapot.obj", &teapot_vert_size,  &teapot_vertex_array,
-                                      &teapot_index_size, &teapot_index_array);
+    printf("Start OBJ load\n");
+    //FSloadOBJ("resources/teapot.obj", &teapot_vert_size,  &teapot_vertex_array,
+    int model_result = \
+        loadOBJ("resources/teapot.obj", &teapot_vert_size,  &teapot_vertex_array,
+                                        &teapot_index_size, &teapot_index_array);
     printf("index  | size = %d, pointer = %p | AT C\n", teapot_vert_size, teapot_index_array);
     printf("result = %lf\n", teapot_vertex_array[100]);
     printf("result = %d\n", teapot_index_array[100]);
+    printf("%s loaded OBJ.\n", (model_result ? "Failed to" : "Successfully"));
 
     /* Initialize Geometry */
     glGenBuffers(1, &m_vbo);
