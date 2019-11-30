@@ -1,6 +1,6 @@
 #include "fs_py_support.h"
 
-PyObject *pConModule, *pConObj, *pConPushMtd;
+PyObject *pConModule, *pConObj;
 
 bool FS_PyConsole_init() {
     PyObject *pName = PyUnicode_DecodeFSDefault("inapp_console");
@@ -10,21 +10,15 @@ bool FS_PyConsole_init() {
     if (pConModule != NULL) {
         pConObj = PyObject_GetAttrString(pConModule, "fs_py_con");
         if (pConObj == NULL) { // Console Object get failure
-            fprintf(stderr, "Failed to get Python Console Object\n");
+            printf("Failed to get Python Console Object\n");
             return 1;
         }
     } else { // Console Module load failure
         PyErr_Print();
-        fprintf(stderr, "Failed to load Python Console\n");
+        printf("Failed to load Python Console Module\n");
         return 1;
     }
-
-    // pConPushMtd = PyObject_GetAttrString(pConObj, "push");
-    // if (pConPushMtd == NULL || !PyCallable_Check(pConModule)) {
-    //     // Console push method get failure
-    //     fprintf(stderr, "Failed to load Python Console\n");
-    //     return 1;
-    // }
+    return false;
 }
 
 PyObject* FS_PyConsole_push(char* input_str) {
@@ -33,17 +27,24 @@ PyObject* FS_PyConsole_push(char* input_str) {
         PyObject *args = PyTuple_New(1);
         PyObject *tmp_input_str = PyUnicode_FromString(input_str);
         if (PyTuple_SetItem(args, 0, tmp_input_str)){
-                fprintf(stderr, "Error while setting input string for pushing\n");
+                printf("Error while setting input string for pushing\n");
                 Py_DECREF(args);
                 Py_DECREF(tmp_input_str);
                 return NULL;
         }
         PyObject *tmp_mtd_str = PyUnicode_FromString((char*)"push");
 
+        printf("DEBUG_A 0\n");
+        printf("%p %p, %p", pConObj, tmp_mtd_str, args);
         result = PyObject_CallMethodObjArgs(pConObj, tmp_mtd_str, args);
+        printf("DEBUG_A 1\n");
+
         Py_DECREF(args);
+        printf("DEBUG_A 2\n");
         Py_DECREF(tmp_input_str);
+        printf("DEBUG_A 3\n");
         if (result == NULL) fprintf(stderr, "Bad Console Push Result\n");
+        printf("DEBUG_A 4\n");
 
         if (PyErr_Occurred()) {
             PyErr_Print();

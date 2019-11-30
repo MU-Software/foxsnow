@@ -17,6 +17,7 @@
 #include "fs_opengl.h"
 // #include "fs_datatype.h"
 #include "fs_py_loader_obj.h"
+#include "fs_py_support.h"
 #include "3d_obj.h"
 
 #ifdef _WIN32
@@ -101,8 +102,8 @@ GLuint FS_CoreScreenShaderProgram;
 
 int TARGET_GL_MAJOR_VERSION = 0;
 int TARGET_GL_MINOR_VERSION = 0;
-bool NUKLEAR_ENABLE = FALSE;
-bool PYTHON_ENABLE = TRUE;
+bool NUKLEAR_ENABLE = false;
+bool PYTHON_ENABLE = true;
 
 const int FPS_LIMIT = 60;
 int current_resolution_x = 800;
@@ -197,9 +198,9 @@ int Initialize() {
     printf("Created GL context successfully on GL %d.%d.\n",
            TARGET_GL_MAJOR_VERSION, TARGET_GL_MINOR_VERSION);
 
-    if (TARGET_GL_MAJOR_VERSION >= 3) NUKLEAR_ENABLE = TRUE;
+    if (TARGET_GL_MAJOR_VERSION >= 3) NUKLEAR_ENABLE = true;
     else {
-        NUKLEAR_ENABLE = FALSE;
+        NUKLEAR_ENABLE = false;
         printf("NUKLEAR disabled due to low OpenGL Version");
     }
 
@@ -643,7 +644,7 @@ int main(int argc, char *argv[]) {
                 static int box_len = 0;
                 static char text[128];
                 static int text_len;
-                static bool py_con_continue = false;
+                bool py_con_continue = false;
                 nk_flags active;
                 float window_height = nk_window_get_height(ctx);
                 float window_width  = nk_window_get_width(ctx);
@@ -660,7 +661,7 @@ int main(int argc, char *argv[]) {
 
                 nk_layout_row_push(ctx, 69);
                 if (nk_button_label(ctx, "Submit") || (active & NK_EDIT_COMMITED)) {
-                    PyObject *result = FS_PyConsole_push(text[text_len]);
+                    PyObject *result = FS_PyConsole_push(text);
                     py_con_continue = PyObject_IsTrue(PyTuple_GetItem(result, 0));
                     PyObject *tmp = PyUnicode_AsASCIIString(PyTuple_GetItem(result, 0));
                     if (tmp == NULL) fprintf(stderr, "Error while parsing string from returned tuple from console\n");
