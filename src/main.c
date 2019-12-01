@@ -597,6 +597,23 @@ int main(int argc, char *argv[]) {
 
     if (Initialize()) return 1;
 
+
+    const float ratio[] = {0.9f, 0.1f};
+    char *box_buffer = (char*)malloc(sizeof(char)*1024);
+    if (box_buffer == NULL) {
+        printf("Error while malloc for console log box\n");
+        return 1;
+    }
+    memset(box_buffer, 0, sizeof(char)*1024);
+    int box_buffer_size = 1024;
+    int box_len = 0;
+    char py_con_input_str[2048] = { 0 };
+    int py_con_input_len = 0;
+    bool py_con_continue = false;
+
+    strcat(box_buffer, "Python console for FoxSnow Engine\n");
+    box_len = 34;
+
     printf("Running...\n");
     while(should_run) {
         start_tick = SDL_GetTicks();
@@ -639,40 +656,67 @@ int main(int argc, char *argv[]) {
                 NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
                 NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE)) {
 
-                static const float ratio[] = {0.9f, 0.1f};
-                static char box_buffer[65535];
-                static int box_len = 0;
-                static char text[128];
-                static int text_len;
-                bool py_con_continue = false;
                 nk_flags active;
                 float window_height = nk_window_get_height(ctx);
                 float window_width  = nk_window_get_width(ctx);
 
                 nk_layout_row_dynamic(ctx, window_height - 90, 1);
-                nk_edit_string(ctx, NK_EDIT_BOX, box_buffer, &box_len, 512, nk_filter_default);
+                nk_edit_string(ctx, NK_EDIT_BOX|NK_EDIT_GOTO_END_ON_ACTIVATE, box_buffer, &box_len, 21474836472147483647, nk_filter_default);
 
                 nk_layout_row_begin(ctx, NK_STATIC, 25, 3);
                 nk_layout_row_push(ctx, 20);
                 nk_label(ctx, (py_con_continue ? "..." : ">>>"), NK_TEXT_LEFT);
 
                 nk_layout_row_push(ctx, window_width - 125);
-                active = nk_edit_string(ctx, NK_EDIT_FIELD|NK_EDIT_SIG_ENTER, text, &text_len, 64,  nk_filter_ascii);
+                active = nk_edit_string(ctx, NK_EDIT_FIELD|NK_EDIT_SIG_ENTER|NK_EDIT_ALLOW_TAB, py_con_input_str, &py_con_input_len, 64,  nk_filter_default);
 
                 nk_layout_row_push(ctx, 69);
                 if (nk_button_label(ctx, "Submit") || (active & NK_EDIT_COMMITED)) {
-                    PyObject *result = FS_PyConsole_push(text);
-                    py_con_continue = PyObject_IsTrue(PyTuple_GetItem(result, 0));
-                    PyObject *tmp = PyUnicode_AsASCIIString(PyTuple_GetItem(result, 0));
-                    if (tmp == NULL) fprintf(stderr, "Error while parsing string from returned tuple from console\n");
-                    else {
-                        char* c_str = PyByteArray_AsString(tmp);
-                        text_len = strlen(c_str);
-                        memcpy(&box_buffer[box_len], &c_str, (nk_size)text_len);
-                        box_len += text_len;
-                        text_len = 0;
+                    if (py_con_continue || py_con_input_str[0] !=  '\0') {
+                        // Write console input to console log box
+                        box_buffer_size += (py_con_input_len + 5);
+                        box_buffer = (char*)realloc(box_buffer, box_buffer_size);
+                        box_len += (py_con_input_len + 5);
+                        strcat(box_buffer, (py_con_continue ? "... " : ">>> "));
+                        strcat(box_buffer, py_con_input_str);
+                        strcat(box_buffer, "\n");
+
+                        // Push input to Console Object(Python)
+                        PyObject *result = FS_PyConsole_push(py_con_input_str);
+
+                        if (result == NULL) printf("Error while getting result of console\n");
+                        else {
+                            // Get boolean whether input is continuous or end
+                            py_con_continue = PyObject_IsTrue(PyTuple_GetItem(result, 0));
+                            // Get result string and length
+                            int py_con_result_len = 0;
+                            // Convert Python string to C char array
+                            char *py_con_result_str = PyUnicode_AsUTF8AndSize(PyTuple_GetItem(result, 1), &py_con_result_len);
+
+                            if (py_con_result_str == NULL) printf("Error while parsing string from returned tuple from console\n");
+                            else {
+                                // Copy result string to console log
+                                box_buffer_size += py_con_result_len;
+                                box_buffer = (char*)realloc(box_buffer, box_buffer_size);
+                                box_len += py_con_result_len;
+                                strcat(box_buffer, py_con_result_str);
+
+                                printf("\nTOTAL_MSG = \n");
+                                printf("%s\n", box_buffer);
+                                printf("-----------\n");
+
+                                // Clear result 
+                                Py_XDECREF(result);
+
+                                // Clear result string
+                                // memset(py_con_result_str, 0, py_con_result_len);
+                                free(py_con_result_str);
+                                py_con_result_len = 0;
+                            }
+                        memset(py_con_input_str, 0, sizeof(py_con_input_str));
+                        py_con_input_len = 0;
+                        }
                     }
-                    Py_XDECREF(tmp);
                 }
                 nk_layout_row_end(ctx);
 
