@@ -16,9 +16,9 @@
 #include "fs_stdfunc.h"
 #include "fs_opengl.h"
 // #include "fs_datatype.h"
-#include "fs_py_loader_obj.h"
-#include "fs_py_support.h"
-#include "3d_obj.h"
+#include "python_support/fs_py_loader_obj.h"
+#include "python_support/fs_py_support.h"
+#include "loader/3d_obj.h"
 
 #ifdef _WIN32
     #include "windows.h"

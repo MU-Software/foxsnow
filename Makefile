@@ -22,5 +22,5 @@ clean:
 run: all
 	./$(BIN)/$(EXECUTABLE)
 
-$(BIN)/$(EXECUTABLE): $(SRC)/*
+$(BIN)/$(EXECUTABLE): $(SRC)/*.* $(SRC)/loader/*.* $(SRC)/python_support/*.*
 	$(CC) $(C_FLAGS) -I$(INCLUDE) -L$(LIB) $^ -lmingw32 -lSDL2main -lSDL2 -lglew32 -lglew32mx -lopengl32 -lPython37 -o $@ $(LIBRARIES)
