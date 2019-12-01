@@ -53,8 +53,11 @@ class FS_Python_Interpreter(code.InteractiveConsole):
 				more = code.InteractiveConsole.push(self, command)
 				result = self.output.getvalue()
 				result_err = self.error.getvalue()
+				result += result_err
 			except (SyntaxError, OverflowError):
-				pass
+				more = False
+				result = 'Critical : SyntaxError or OverflowError'
+				result_err = ''
 			return more, result, result_err
 
 if __name__ == '__main__':
