@@ -15,6 +15,7 @@
 
 #include "fs_stdfunc.h"
 #include "fs_opengl.h"
+#include "fs_node.h"
 // #include "fs_datatype.h"
 #include "python_support/fs_py_loader_obj.h"
 #include "python_support/fs_py_support.h"
