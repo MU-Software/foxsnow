@@ -249,17 +249,19 @@ int Initialize() {
     SDL_setenv("PYTHONHOME", path_python, true);
     SDL_setenv("PYTHONPATH", path_python, true);
     printf("Set PATH successfully.\n");
-    Py_Initialize();
-    printf("Inited Python successfully.\n");
+    if (PYTHON_ENABLE) {
+        Py_Initialize();
+        printf("Inited Python successfully.\n");
 
-    PyObject *sys = PyImport_ImportModule("sys");
-    PyObject *path = PyObject_GetAttrString(sys, "path");
-    PyList_Append(path, PyUnicode_FromString(path_python_addon));
-    PyList_Append(path, PyUnicode_FromString(path_python_script));
+        PyObject *sys = PyImport_ImportModule("sys");
+        PyObject *path = PyObject_GetAttrString(sys, "path");
+        PyList_Append(path, PyUnicode_FromString(path_python_addon));
+        PyList_Append(path, PyUnicode_FromString(path_python_script));
 
-    PyRun_SimpleString("import time;import numpy;print(numpy.version.version)");
-    if (FS_PyConsole_init()) {
-        fprintf(stderr, "Initialize Python Console Failed\n");
+        PyRun_SimpleString("import time;import numpy;print(numpy.version.version)");
+        if (FS_PyConsole_init()) {
+            fprintf(stderr, "Initialize Python Console Failed\n");
+        }
     }
 
     /* Initialize Shaders */
@@ -398,56 +400,58 @@ int Initialize() {
     GLenum err = glGetError();
     if (err != GL_NO_ERROR) printf("ERROR - glError 8: 0x%04X\n", err);
 
-    ctx = nk_sdl_init(m_window);
-    {
-        nk_sdl_font_stash_begin(&atlas);
-        struct nk_font *roboto  = nk_font_atlas_add_from_file(atlas, "./resources/font/Roboto-Regular.ttf", 16, 0);
-        nk_sdl_font_stash_end();
-        
-        //nk_style_load_all_cursors(ctx, atlas->cursors);
-        nk_style_set_font(ctx, &roboto->handle);
+    if (NUKLEAR_ENABLE) {
+        ctx = nk_sdl_init(m_window);
+        {
+            nk_sdl_font_stash_begin(&atlas);
+            struct nk_font *roboto  = nk_font_atlas_add_from_file(atlas, "./resources/font/Roboto-Regular.ttf", 16, 0);
+            nk_sdl_font_stash_end();
+            
+            //nk_style_load_all_cursors(ctx, atlas->cursors);
+            nk_style_set_font(ctx, &roboto->handle);
 
-        ctx->style.window.background = nk_rgba(38,38,38,128);
-        ctx->style.window.header.normal = nk_style_item_color(nk_rgba(38,38,38,128));
-        ctx->style.window.header.hover  = nk_style_item_color(nk_rgba(38,38,38,192));
-        ctx->style.window.header.active = nk_style_item_color(nk_rgba(38,38,38,224));
-        ctx->style.window.header.minimize_button.normal = nk_style_item_color(nk_rgba(38,38,38,0));
-        ctx->style.window.header.minimize_button.hover  = nk_style_item_color(nk_rgba(38,38,38,0));
-        ctx->style.window.header.minimize_button.active = nk_style_item_color(nk_rgba(38,38,38,0));
-        ctx->style.window.header.minimize_button.border_color = nk_rgba(38,38,38,224);
-        ctx->style.window.header.label_active = nk_rgb(212,212,212);
-        ctx->style.window.fixed_background = nk_style_item_color(nk_rgba(38,38,38,192));
-        ctx->style.window.border_color = nk_rgb(18,86,133);
-        // ctx->style.window.contextual_border_color = nk_rgb(255,165,0);
-        // ctx->style.window.menu_border_color = nk_rgb(255,165,0);
-        // ctx->style.window.group_border_color = nk_rgb(255,165,0);
-        // ctx->style.window.tooltip_border_color = nk_rgb(255,165,0);
-        // ctx->style.window.scrollbar_size = nk_vec2(16,16);
-        // ctx->style.window.border_color = nk_rgba(0,0,0,0);
-        // ctx->style.window.border = 1;
+            ctx->style.window.background = nk_rgba(38,38,38,128);
+            ctx->style.window.header.normal = nk_style_item_color(nk_rgba(38,38,38,128));
+            ctx->style.window.header.hover  = nk_style_item_color(nk_rgba(38,38,38,192));
+            ctx->style.window.header.active = nk_style_item_color(nk_rgba(38,38,38,224));
+            ctx->style.window.header.minimize_button.normal = nk_style_item_color(nk_rgba(38,38,38,0));
+            ctx->style.window.header.minimize_button.hover  = nk_style_item_color(nk_rgba(38,38,38,0));
+            ctx->style.window.header.minimize_button.active = nk_style_item_color(nk_rgba(38,38,38,0));
+            ctx->style.window.header.minimize_button.border_color = nk_rgba(38,38,38,224);
+            ctx->style.window.header.label_active = nk_rgb(212,212,212);
+            ctx->style.window.fixed_background = nk_style_item_color(nk_rgba(38,38,38,192));
+            ctx->style.window.border_color = nk_rgb(18,86,133);
+            // ctx->style.window.contextual_border_color = nk_rgb(255,165,0);
+            // ctx->style.window.menu_border_color = nk_rgb(255,165,0);
+            // ctx->style.window.group_border_color = nk_rgb(255,165,0);
+            // ctx->style.window.tooltip_border_color = nk_rgb(255,165,0);
+            // ctx->style.window.scrollbar_size = nk_vec2(16,16);
+            // ctx->style.window.border_color = nk_rgba(0,0,0,0);
+            // ctx->style.window.border = 1;
 
-        ctx->style.button.normal = nk_style_item_color(nk_rgba(38,38,38,0));
-        ctx->style.button.hover = nk_style_item_color(nk_rgba(38,38,38,192));
-        ctx->style.button.border_color = nk_rgb(0,122,204);
-        ctx->style.button.text_normal = nk_rgb(212,212,212);
-        ctx->style.button.text_hover = nk_rgb(212,212,212);
-        ctx->style.button.text_active = nk_rgb(212,212,212);
+            ctx->style.button.normal = nk_style_item_color(nk_rgba(38,38,38,0));
+            ctx->style.button.hover = nk_style_item_color(nk_rgba(38,38,38,192));
+            ctx->style.button.border_color = nk_rgb(0,122,204);
+            ctx->style.button.text_normal = nk_rgb(212,212,212);
+            ctx->style.button.text_hover = nk_rgb(212,212,212);
+            ctx->style.button.text_active = nk_rgb(212,212,212);
 
-        ctx->style.text.color = nk_rgb(212,212,212);
+            ctx->style.text.color = nk_rgb(212,212,212);
 
-        ctx->style.edit.normal = nk_style_item_color(nk_rgba(38,38,38,192));
-        ctx->style.edit.hover  = nk_style_item_color(nk_rgba(38,38,38,192));
-        ctx->style.edit.active = nk_style_item_color(nk_rgba(38,38,38,192));
-        ctx->style.edit.border_color = nk_rgb(18,86,133);
-        ctx->style.edit.text_normal = nk_rgb(212,212,212);
-        ctx->style.edit.text_hover  = nk_rgb(212,212,212);
-        ctx->style.edit.text_active = nk_rgb(212,212,212);
-        ctx->style.edit.selected_normal = nk_rgb(212,212,212);
-        ctx->style.edit.selected_hover  = nk_rgb(212,212,212);
-        ctx->style.edit.selected_text_normal = nk_rgb(212,212,212);
-        ctx->style.edit.selected_text_hover  = nk_rgb(212,212,212);
-        // ctx->style.button.active = nk_style_item_color(nk_rgb(220,10,0));
-        // ctx->style.button.text_background = nk_rgb(0,0,0);
+            ctx->style.edit.normal = nk_style_item_color(nk_rgba(38,38,38,192));
+            ctx->style.edit.hover  = nk_style_item_color(nk_rgba(38,38,38,192));
+            ctx->style.edit.active = nk_style_item_color(nk_rgba(38,38,38,192));
+            ctx->style.edit.border_color = nk_rgb(18,86,133);
+            ctx->style.edit.text_normal = nk_rgb(212,212,212);
+            ctx->style.edit.text_hover  = nk_rgb(212,212,212);
+            ctx->style.edit.text_active = nk_rgb(212,212,212);
+            ctx->style.edit.selected_normal = nk_rgb(212,212,212);
+            ctx->style.edit.selected_hover  = nk_rgb(212,212,212);
+            ctx->style.edit.selected_text_normal = nk_rgb(212,212,212);
+            ctx->style.edit.selected_text_hover  = nk_rgb(212,212,212);
+            // ctx->style.button.active = nk_style_item_color(nk_rgb(220,10,0));
+            // ctx->style.button.text_background = nk_rgb(0,0,0);
+        }
     }
 
     return 0;
@@ -459,9 +463,9 @@ int Initialize() {
 int FS_clean_up() {
     printf("Exiting...\n");
 
-    if (Py_FinalizeEx() < 0) return 120;
+    if (PYTHON_ENABLE && Py_FinalizeEx() < 0) return 120;
 
-    nk_sdl_shutdown();
+    if (NUKLEAR_ENABLE) nk_sdl_shutdown();
 
     glUseProgram(0);
     glDisableVertexAttribArray(0);
@@ -552,7 +556,7 @@ int OGL_render_update() {
     GLenum err = glGetError();
     if (err != GL_NO_ERROR) printf("ERROR WHILE RENDER - glError : 0x%04X\n", err);
 
-    nk_sdl_render(NK_ANTI_ALIASING_ON, MAX_VERTEX_MEMORY, MAX_ELEMENT_MEMORY);
+    if (NUKLEAR_ENABLE) nk_sdl_render(NK_ANTI_ALIASING_ON, MAX_VERTEX_MEMORY, MAX_ELEMENT_MEMORY);
 
     SDL_GL_SwapWindow(m_window);
     return 0;
@@ -620,7 +624,7 @@ int main(int argc, char *argv[]) {
 
         bg.r = 0.10f, bg.g = 0.18f, bg.b = 0.24f, bg.a = 1.0f;
         SDL_Event event;
-        nk_input_begin(ctx);
+        if (NUKLEAR_ENABLE) nk_input_begin(ctx);
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE) {
                 should_run = false;
@@ -647,11 +651,11 @@ int main(int argc, char *argv[]) {
                     else if (event.key.keysym.sym == SDLK_ESCAPE) should_run = false;
                 }
             }
-            nk_sdl_handle_event(&event);
+            if (NUKLEAR_ENABLE) nk_sdl_handle_event(&event);
         }
-        nk_input_end(ctx);
+        if (NUKLEAR_ENABLE) nk_input_end(ctx);
 
-        if (mode_console) {
+        if (mode_console && PYTHON_ENABLE && NUKLEAR_ENABLE) {
             if (nk_begin(ctx, "Interactive Console", nk_rect(30, 70, 480, 320),
                 NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
                 NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE)) {

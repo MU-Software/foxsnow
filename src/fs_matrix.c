@@ -3,7 +3,7 @@
 #include <stdarg.h>
 #include <string.h>
 
-#include "matrix_struct.h"
+#include "fs_matrix.h"
 
 matrix* create_matrix(int height, int width, ...) {
 	va_list ap;
@@ -60,8 +60,12 @@ void mat_print(matrix mat) {
 	}
 }
 matrix* mat_plus(matrix* a, matrix* b) {
+	if (!a||!b) {
+		printf("MATRIX %c is NULL!\n", (a?'b':'a'));
+		return NULL;
+	}
 	if ((a->width != b->width) || (a->height != b->height)) {
-		printf("IMPROPER MATRIX CALCULATION! - PLUS");
+		printf("IMPROPER MATRIX CALCULATION! - PLUS\n");
 		return NULL;
 	}
 	matrix* result = (matrix*)calloc(1, sizeof(matrix));
@@ -82,8 +86,12 @@ matrix* mat_plus(matrix* a, matrix* b) {
 	return result;
 }
 matrix* mat_minus(matrix* a, matrix* b) {
+	if (!a||!b) {
+		printf("MATRIX %c is NULL!\n", (a?'b':'a'));
+		return NULL;
+	}
 	if ((a->width != b->width) || (a->height != b->height)) {
-		printf("IMPROPER MATRIX CALCULATION! - MINUS");
+		printf("IMPROPER MATRIX CALCULATION! - MINUS\n");
 		return NULL;
 	}
 	matrix* result = (matrix*)calloc(1, sizeof(matrix));
@@ -104,6 +112,10 @@ matrix* mat_minus(matrix* a, matrix* b) {
 	return result;
 }
 matrix* mat_scala_multiply(matrix* a, double b) {
+	if (!a) {
+		printf("MATRIX a is NULL!\n");
+		return NULL;
+	}
 	matrix* result = (matrix*)calloc(1, sizeof(matrix));
 	result->height = a->height;
 	result->width  = a->width;
@@ -116,6 +128,10 @@ matrix* mat_scala_multiply(matrix* a, double b) {
 	return result;
 }
 matrix* mat_scala_divide(matrix* a, double b) {
+	if (!a) {
+		printf("MATRIX a is NULL!\n");
+		return NULL;
+	}
 	matrix* result = (matrix*)calloc(1, sizeof(matrix));
 	result->height = a->height;
 	result->width  = a->width;
@@ -128,8 +144,12 @@ matrix* mat_scala_divide(matrix* a, double b) {
 	return result;
 }
 matrix* mat_multiply(matrix* a, matrix* b) {
+	if (!a||!b) {
+		printf("MATRIX %c is NULL!\n", (a?'b':'a'));
+		return NULL;
+	}
 	if (a->width != b->height) {
-		printf("IMPROPER MATRIX CALCULATION! - MULTIPLY");
+		printf("IMPROPER MATRIX CALCULATION! - MULTIPLY\n");
 		return NULL;
 	}
 
@@ -149,8 +169,12 @@ matrix* mat_multiply(matrix* a, matrix* b) {
 	return result;
 }
 matrix* mat_square_multiply(matrix* a, matrix* b) {
+	if (!a||!b) {
+		printf("MATRIX %c is NULL!\n", (a?'b':'a'));
+		return NULL;
+	}
 	if (a->width != a-> height || a->height != b->width || b->width != b-> height) {
-		printf("WARNING : IMPROPER MATRIX CALCULATION! - SQUARE MATRIX MULTIPLY");
+		printf("WARNING : IMPROPER MATRIX CALCULATION! - SQUARE MATRIX MULTIPLY\n");
 		return mat_multiply(a, b);
 	}
 	int r, c;
@@ -169,6 +193,10 @@ matrix* mat_square_multiply(matrix* a, matrix* b) {
 	return result;
 }
 matrix* mat_divide(matrix* a, matrix* b) {
+	if (!a||!b) {
+		printf("MATRIX %c is NULL!\n", (a?'b':'a'));
+		return NULL;
+	}
 	// TODO : Let's make this function work!
 }
 

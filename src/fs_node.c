@@ -1,33 +1,10 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdbool.h>
-#include <string.h>
+#include "fs_node.h"
 
-#include "fs_matrix.h"
-
-typedef struct _node_data {
-	char* name;
-	int name_len;
-	matrix* model_mat;
-	matrix* view_mat;
-	matrix* modelview_mat;
-} node_data;
-typedef struct _node {
-	struct _node* parent;
-	struct _node* child;
-	struct _node* child_last;
-	struct _node* next;
-	struct _node* prev;
-
-	void (*in) (struct _node* target);
-	void (*out)(struct _node* target);
-	node_data* data;
-} node;
-typedef struct _node_head {
-	node* node_start;
-} node_head;
-
-node_head render = { NULL };
+char* create_dynamic_str(char* str, int size) { //DONE
+	char* new_str = (char*)calloc(size+1, sizeof(char));
+	strcpy(new_str, str);
+	return new_str;
+}
 
 node_data* create_node_data(char* name, int name_len, matrix* model_mat, matrix* view_mat) { //DONE
 	node_data* result = (node_data*)calloc(1, sizeof(node_data));
@@ -69,7 +46,7 @@ node_data* deepcopy_node_data(node_data* target_data) { //DONE
 	result->modelview_mat = NULL;
 	return result;
 }
-int free_node_data(node_data** target_data_ptr) {
+int free_node_data(node_data** target_data_ptr) { //DONE
 	free_matrix(&((*target_data_ptr)->model_mat));
 	free_matrix(&((*target_data_ptr)->view_mat));
 	free_matrix(&((*target_data_ptr)->modelview_mat));
@@ -79,32 +56,13 @@ int free_node_data(node_data** target_data_ptr) {
 	return 0;
 }
 
-node* create_node(node* parent_to, void(*func_in), void(*func_out), node_data* data) {
+node* create_node(node* parent_to, void(*func_in), void(*func_out), node_data* data) { //DONE
 	node* new_node = (node*)calloc(1, sizeof(node));
 	new_node->in   = func_in;
 	new_node->out  = func_out;
 
 	if (!data) {
-		data = (node_data*)calloc(1, sizeof(node_data));
-		char data_noname[] = "NONAME";
-		data->name = (char*)calloc(8, sizeof(char));
-		strcpy(data->name, data_noname);
-
-		data->model_mat = create_matrix(4, 4,
-							1., 0., 0., 0.,
-							0., 1., 0., 0.,
-							0., 0., 1., 0.,
-							0., 0., 0., 1.);
-		data->view_mat  = create_matrix(4, 4,
-							1., 0., 0., 0.,
-							0., 1., 0., 0.,
-							0., 0., 1., 0.,
-							0., 0., 0., 1.);
-		data->modelview_mat = create_matrix(4, 4,
-								1., 0., 0., 0.,
-								0., 1., 0., 0.,
-								0., 0., 1., 0.,
-								0., 0., 0., 1.);
+		data = create_node_data(create_dynamic_str("DEFAULT", 7), 8, NULL, NULL);
 	}
 	new_node->data = data;
 
@@ -125,14 +83,14 @@ node* create_node(node* parent_to, void(*func_in), void(*func_out), node_data* d
 	}
 	return new_node;
 }
-node* copy_node(node* target) {
+node* copy_node(node* target) { //DONE
 	node* result = (node*)calloc(1, sizeof(node));
 	memcpy(result, target, sizeof(node));
-	//TODO : COPY NODE DATA
+	result->data = deepcopy_node_data(target->data);
 	return target;
 }
 
-int free_node(node** target_node_ptr) {
+int free_node(node** target_node_ptr) { //DONE
 	node* target_node = *target_node_ptr;
 	// Return error when target_node == NULL
 	if (target_node == NULL) return 1;
@@ -206,6 +164,13 @@ void node_postorder(node* target, int level) { //DONE
 	target->out(target);
 }
 
+void first_src_in(node* target) {
+	target->data->modelview_mat = create_matrix(4, 4,
+									1., 0., 0., 0.,
+									0., 1., 0., 0.,
+									0., 0., 1., 0.,
+									0., 0., 0., 1.);
+}
 void src_in(node* target) {
 	matrix* tmp_mat_1 = mat_multiply(target->data->view_mat, target->data->model_mat);
 	free_matrix(&(target->data->modelview_mat));
@@ -215,35 +180,30 @@ void src_in(node* target) {
 void src_out(node* target) { //DONE
 	printf("%s ", target->data->name);
 }
-char* create_dynamic_str(char* str, int size) { //DONE
-	char* new_str = (char*)calloc(size+1, sizeof(char));
-	strcpy(new_str, str);
-	return new_str;
-}
 
 void node_test() {
-	render.node_start = create_node(NULL, *src_in, *src_out, NULL);
+	render.node_start = create_node(NULL, *first_src_in, *src_out, create_node_data(create_dynamic_str("A", 1), 2, NULL, NULL));
 	node* t_1  = render.node_start;
-	node* t_2  = create_node(t_1, *src_in, *src_out, NULL);
-	node* t_3  = create_node(t_1, *src_in, *src_out, NULL);
-	node* t_4  = create_node(t_1, *src_in, *src_out, NULL);
-	node* t_5  = create_node(t_2, *src_in, *src_out, NULL);
-	node* t_6  = create_node(t_2, *src_in, *src_out, NULL);
-	node* t_7  = create_node(t_2, *src_in, *src_out, NULL);
-	node* t_8  = create_node(t_3, *src_in, *src_out, NULL);
-	node* t_9  = create_node(t_3, *src_in, *src_out, NULL);
-	node* t_10 = create_node(t_3, *src_in, *src_out, NULL);
-	node* t_11 = create_node(t_4, *src_in, *src_out, NULL);
-	node* t_12 = create_node(t_4, *src_in, *src_out, NULL);
-	node* t_13 = create_node(t_4, *src_in, *src_out, NULL);
-	node* t_14 = create_node(t_5, *src_in, *src_out, NULL);
-	node* t_15 = create_node(t_5, *src_in, *src_out, NULL);
-	node* t_16 = create_node(t_5, *src_in, *src_out, NULL);
-	node* t_17 = create_node(t_6, *src_in, *src_out, NULL);
-	node* t_18 = create_node(t_6, *src_in, *src_out, NULL);
-	node* t_19 = create_node(t_6, *src_in, *src_out, NULL);
-	node* t_20 = create_node(t_7, *src_in, *src_out, NULL);
-	node* t_21 = create_node(t_7, *src_in, *src_out, NULL);
+	node* t_2  = create_node(t_1, *src_in, *src_out, create_node_data(create_dynamic_str("B", 1), 2, NULL, NULL));
+	node* t_3  = create_node(t_1, *src_in, *src_out, create_node_data(create_dynamic_str("C", 1), 2, NULL, NULL));
+	node* t_4  = create_node(t_1, *src_in, *src_out, create_node_data(create_dynamic_str("D", 1), 2, NULL, NULL));
+	node* t_5  = create_node(t_2, *src_in, *src_out, create_node_data(create_dynamic_str("E", 1), 2, NULL, NULL));
+	node* t_6  = create_node(t_2, *src_in, *src_out, create_node_data(create_dynamic_str("F", 1), 2, NULL, NULL));
+	node* t_7  = create_node(t_2, *src_in, *src_out, create_node_data(create_dynamic_str("G", 1), 2, NULL, NULL));
+	node* t_8  = create_node(t_3, *src_in, *src_out, create_node_data(create_dynamic_str("H", 1), 2, NULL, NULL));
+	node* t_9  = create_node(t_3, *src_in, *src_out, create_node_data(create_dynamic_str("I", 1), 2, NULL, NULL));
+	node* t_10 = create_node(t_3, *src_in, *src_out, create_node_data(create_dynamic_str("J", 1), 2, NULL, NULL));
+	node* t_11 = create_node(t_4, *src_in, *src_out, create_node_data(create_dynamic_str("K", 1), 2, NULL, NULL));
+	node* t_12 = create_node(t_4, *src_in, *src_out, create_node_data(create_dynamic_str("L", 1), 2, NULL, NULL));
+	node* t_13 = create_node(t_4, *src_in, *src_out, create_node_data(create_dynamic_str("M", 1), 2, NULL, NULL));
+	node* t_14 = create_node(t_5, *src_in, *src_out, create_node_data(create_dynamic_str("N", 1), 2, NULL, NULL));
+	node* t_15 = create_node(t_5, *src_in, *src_out, create_node_data(create_dynamic_str("O", 1), 2, NULL, NULL));
+	node* t_16 = create_node(t_5, *src_in, *src_out, create_node_data(create_dynamic_str("P", 1), 2, NULL, NULL));
+	node* t_17 = create_node(t_6, *src_in, *src_out, create_node_data(create_dynamic_str("Q", 1), 2, NULL, NULL));
+	node* t_18 = create_node(t_6, *src_in, *src_out, create_node_data(create_dynamic_str("R", 1), 2, NULL, NULL));
+	node* t_19 = create_node(t_6, *src_in, *src_out, create_node_data(create_dynamic_str("S", 1), 2, NULL, NULL));
+	node* t_20 = create_node(t_7, *src_in, *src_out, create_node_data(create_dynamic_str("T", 1), 2, NULL, NULL));
+	node* t_21 = create_node(t_7, *src_in, *src_out, create_node_data(create_dynamic_str("U", 1), 2, NULL, NULL));
 	node_print(t_1, 0);
 	node_postorder(t_1, 0);
 
