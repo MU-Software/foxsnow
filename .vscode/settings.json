@@ -8,6 +8,7 @@
         "fs_opengl.h": "c",
         "fs_stdfunc.h": "c",
         "sdl.h": "c",
-        "stdbool.h": "c"
+        "stdbool.h": "c",
+        "fs_node.h": "c"
     }
 }
