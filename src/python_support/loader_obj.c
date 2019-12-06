@@ -1,4 +1,4 @@
-#include "fs_py_loader_obj.h"
+#include "loader_obj.h"
 
 GLfloat* FSloadOBJ(char* filename, int* vert_size, float** vert_arr, int** index_size, int* index_arr) {
     PyObject* args;
@@ -17,11 +17,8 @@ GLfloat* FSloadOBJ(char* filename, int* vert_size, float** vert_arr, int** index
 
     if (pModule != NULL) {
         pFunc = PyObject_GetAttrString(pModule, "load_obj");
-        // printf(">>> Function call init\n");
         if (pFunc && PyCallable_Check(pFunc)) {
-            // printf(">>> Function successfully loaded!\n");
             result = PyObject_CallObject(pFunc, args);
-            // printf(">>> Function successfully called!\n");
             Py_DECREF(tmp_str);
             // IMPORTANT : DO Py_DECREF(argument) after function ends.
             // Py_DECREF(argument);
@@ -53,5 +50,12 @@ GLfloat* FSloadOBJ(char* filename, int* vert_size, float** vert_arr, int** index
         *index_arr   = (int*)PyLong_AsLong(PyTuple_GetItem(result, 2));
         printf("index  | size = %d, pointer = %p | AT C\n", *index_size, index_arr);
     }
+
+    // int teapot_vert_size, teapot_index_size;
+    // float* teapot_vertex_array;
+    // int* teapot_index_array;
+    //FSloadOBJ("resources/teapot.obj", &teapot_vert_size,  &teapot_vertex_array,
+    //                                  &teapot_index_size, &teapot_index_array);
+
 
 }

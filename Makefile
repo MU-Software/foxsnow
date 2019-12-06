@@ -1,5 +1,5 @@
 CC		:= gcc
-C_FLAGS := -g -w#-Wall -Wextra
+C_FLAGS := -g -m32 -w #-Wall -Wextra
 
 BIN		:= bin
 SRC		:= src
@@ -22,5 +22,5 @@ clean:
 run: all
 	./$(BIN)/$(EXECUTABLE)
 
-$(BIN)/$(EXECUTABLE): $(SRC)/*.* $(SRC)/loader/*.* $(SRC)/python_support/*.*
+$(BIN)/$(EXECUTABLE): $(SRC)/*.* $(SRC)/loader/*.* $(SRC)/datatype/*.* $(SRC)/python_support/*.* $(SRC)/GL_support/*.* $(SRC)/nuklear_support/*.*
 	$(CC) $(C_FLAGS) -I$(INCLUDE) -L$(LIB) $^ -lmingw32 -lSDL2main -lSDL2 -lglew32 -lglew32mx -lopengl32 -lPython37 -o $@ $(LIBRARIES)

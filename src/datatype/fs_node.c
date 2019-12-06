@@ -182,6 +182,7 @@ void src_out(node* target) { //DONE
 }
 
 void node_test() {
+	node_head render;
 	render.node_start = create_node(NULL, *first_src_in, *src_out, create_node_data(create_dynamic_str("A", 1), 2, NULL, NULL));
 	node* t_1  = render.node_start;
 	node* t_2  = create_node(t_1, *src_in, *src_out, create_node_data(create_dynamic_str("B", 1), 2, NULL, NULL));

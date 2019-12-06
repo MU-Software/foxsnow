@@ -1,8 +1,3 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdarg.h>
-#include <string.h>
-
 #include "fs_matrix.h"
 
 matrix* create_matrix(int height, int width, ...) {
