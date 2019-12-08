@@ -38,6 +38,8 @@
 		matrix* model_mat;
         matrix* cumulative_model_mat;
 	} fs_3d_data;
+    
+	char* create_dynamic_str(char* str, int size);
 
     fs_3d_data* swallow_copy_data(fs_3d_data* target_data);
     fs_3d_data* deep_copy_data(fs_3d_data* target_data);

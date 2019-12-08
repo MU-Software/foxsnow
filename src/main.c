@@ -319,22 +319,14 @@ int Initialize() {
 
     if (NUKLEAR_ENABLE) FS_nk_consoleInit(fs_sdl_window);
 
-    render.node_start = create_node(NULL,
-        NULL, NULL,
-        create_node_data(
-            create_dynamic_str("Teapot_Parent", 13), 14,
-            NULL, NULL
-    ));
+    render.node_start = create_node(NULL, NULL, NULL,
+                                    create_data(create_dynamic_str("Teapot_parent", 13), 14));
     node* teapot_node_1 = create_node(render.node_start,
                                       NULL, NULL,
-                                      create_node_data(
-                                        create_dynamic_str("Teapot_1", 13), 14,
-                                        NULL, NULL));
+                                      create_data(create_dynamic_str("Teapot_1", 8), 9));
     node* teapot_node_2 = create_node(render.node_start,
                                       NULL, NULL,
-                                      create_node_data(
-                                        create_dynamic_str("Teapot_2", 13), 14,
-                                        NULL, NULL));
+                                      create_data(create_dynamic_str("Teapot_2", 8), 9));
 
     return 0;
 }

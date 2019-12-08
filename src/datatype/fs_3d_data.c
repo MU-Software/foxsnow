@@ -1,5 +1,11 @@
 #include "fs_3d_data.h"
 
+char* create_dynamic_str(char* str, int size) { //DONE
+	char* new_str = (char*)calloc(size+1, sizeof(char));
+	strcpy(new_str, str);
+	return new_str;
+}
+
 fs_3d_data* swallow_copy_data(fs_3d_data* target_data) { //DONE
 	fs_3d_data* result = (fs_3d_data*)calloc(1, sizeof(fs_3d_data));
 	memcpy(result, target_data, sizeof(fs_3d_data));
