@@ -122,7 +122,7 @@ float* teapot_vertex_array;
 int* teapot_index_array;
 
 SDL_Window    *fs_sdl_window;
-SDL_GLContext  m_context;
+SDL_GLContext  fs_sdl_GLcontext;
 GLuint         m_vao, m_vbo, m_ebo, m_tex;
 GLuint         m_vert_shader;
 GLuint         m_frag_shader;
@@ -179,11 +179,11 @@ int Initialize() {
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, TARGET_GL_MAJOR_VERSION);
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, TARGET_GL_MINOR_VERSION);
 
-        m_context = SDL_GL_CreateContext(fs_sdl_window);
-        if (m_context == NULL) continue;
+        fs_sdl_GLcontext = SDL_GL_CreateContext(fs_sdl_window);
+        if (fs_sdl_GLcontext == NULL) continue;
         else break;
     }
-    if (m_context == NULL) {
+    if (fs_sdl_GLcontext == NULL) {
         fprintf(stderr, "Failed to create GL context(TOTAL_FAILURE)\n");
         SDL_DestroyWindow(fs_sdl_window);
         SDL_Quit();
@@ -204,7 +204,7 @@ int Initialize() {
     // glewExperimental = GL_TRUE; // Please expose OpenGL 3.x+ interfaces
     if (glewInit() != GLEW_OK) {
         fprintf(stderr, "Failed to init GLEW\n");
-        SDL_GL_DeleteContext(m_context);
+        SDL_GL_DeleteContext(fs_sdl_GLcontext);
         SDL_DestroyWindow(fs_sdl_window);
         SDL_Quit();
         return 1;
@@ -361,7 +361,7 @@ int FS_clean_up() {
     glDeleteBuffers(1, &m_vbo);
     glDeleteVertexArrays(1, &m_vao);
 
-    SDL_GL_DeleteContext(m_context);
+    SDL_GL_DeleteContext(fs_sdl_GLcontext);
     SDL_DestroyWindow(fs_sdl_window);
     SDL_Quit();
 
