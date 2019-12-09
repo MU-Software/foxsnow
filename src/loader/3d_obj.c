@@ -133,7 +133,7 @@ int loadOBJ(char* filename, int* vert_size, float** vert_arr, int** index_size, 
 
                 // Insert data to arr_vertex
                 if (strchr(target_slice_1, '/') == NULL) {
-                    arr_index[index_arr_index] = atoi(target_slice_1);
+                    arr_index[index_arr_index] = atoi(target_slice_1)-1;
                     index_arr_index++;
                 }
                 else {
