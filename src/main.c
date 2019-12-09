@@ -96,8 +96,6 @@
 
 
 
-
-
 #ifdef _WIN32
     #include "windows.h"
 #endif
@@ -123,10 +121,6 @@ int* teapot_index_array;
 
 SDL_Window    *fs_sdl_window;
 SDL_GLContext  fs_sdl_GLcontext;
-GLuint         m_vao, m_vbo, m_ebo, m_tex;
-GLuint         m_vert_shader;
-GLuint         m_frag_shader;
-GLuint         m_shader_prog;
 
 bool mode_multiple_viewport = false;
 bool mode_wireframe = false;
@@ -221,7 +215,7 @@ int Initialize() {
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glFrontFace(GL_CCW);
-    glDisable(GL_DEPTH_CLAMP);
+    // glDisable(GL_DEPTH_CLAMP);
     printf("Set GL successfully.\n");
 
     #ifndef NODEBUG
@@ -262,55 +256,51 @@ int Initialize() {
         }
     }
 
+    FS_ViewMatrix = create_matrix(4, 4, 1.0f, 0.0f, 0.0f, 0.0f,
+                                        0.0f, 1.0f, 0.0f, 0.0f,
+                                        0.0f, 0.0f, 1.0f, 0.0f,
+                                        0.0f, 0.0f, 0.0f, 1.0f);
+    FS_ProjectionMatrix = create_matrix(4, 4, 0.0f, 0.0f, 0.0f, 0.0f,
+                                              0.0f, 0.0f, 0.0f, 0.0f,
+                                              0.0f, 0.0f, 0.0f, 0.0f,
+                                              0.0f, 0.0f, 0.0f, 0.0f);
+    float n = 0.1f, // near
+          f = 100.0f, // far
+          r = 800.0f, // right // 
+          t = 600.0f; // top   // 
+          //어떤게 FOV고 ASPECT지?
+    // FS_ProjectionMatrix->mat[ 0] = n/r;
+    // FS_ProjectionMatrix->mat[ 5] = n/t;
+    // FS_ProjectionMatrix->mat[10] = (-(f+n))/(f-n);
+    // FS_ProjectionMatrix->mat[11] = (-2*f*n)/(f-n);
+    FS_ProjectionMatrix->mat[ 0] = 1.299038f;
+    FS_ProjectionMatrix->mat[ 5] = 1.732051f;
+    FS_ProjectionMatrix->mat[10] = -1.00060f;
+    FS_ProjectionMatrix->mat[11] = -0.60018f;
+    FS_ProjectionMatrix->mat[14] = -1.0f;
+    printf("ProjectionMatrix:----------------\n");
+    mat_print(*FS_ProjectionMatrix);
+
+    float scale = 0.01f;
+
     // Load Model
-    GLint status;
-    char err_buf[4096];
+    render.node_start = create_node(NULL, renderNodeIn, renderNodeOut,
+                                    create_data(create_dynamic_str("Teapot_parent", 13), 14));
+    node* teapot_node_1 = create_node(render.node_start,
+                                      renderNodeIn, renderNodeOut,
+                                      create_data(create_dynamic_str("Teapot_1", 8), 9));
+    FSloadModel(teapot_node_1, "resources/teapot.obj", "default.vert.glsl", "default.frag.glsl");
+    set_scale(teapot_node_1->data, scale, scale, scale);
+    set_z(teapot_node_1->data,  -0.35f);
 
-    glGenVertexArrays(1, &m_vao);
-    glBindVertexArray(m_vao);
-    printf("Binded default VAO successfully.\n");
+    node* teapot_node_2 = create_node(render.node_start,
+                                      renderNodeIn, renderNodeOut,
+                                      create_data(create_dynamic_str("Teapot_2", 8), 9));
+    FSloadModel(teapot_node_2, "resources/teapot.obj", "default.vert.glsl", "default.frag.glsl");
 
-    char* tmp_shader_src;
-    tmp_shader_src = file_to_mem("default.vert.glsl");
-    m_vert_shader = FScreateShader(GL_VERTEX_SHADER, tmp_shader_src);
-    free(tmp_shader_src);
-    if (m_vert_shader == -1) return 1;
-
-    tmp_shader_src = file_to_mem("default.frag.glsl");
-    m_frag_shader = FScreateShader(GL_FRAGMENT_SHADER, tmp_shader_src);
-    free(tmp_shader_src);
-    if (m_frag_shader == -1) return 1;
-
-    m_shader_prog = glCreateProgram();
-    glAttachShader(m_shader_prog, m_vert_shader);
-    glAttachShader(m_shader_prog, m_frag_shader);
-    glBindFragDataLocation(m_shader_prog, 0, "out_Color0");
-    glLinkProgram(m_shader_prog);
-    glUseProgram(m_shader_prog);
-
-    int model_result =  loadOBJ("resources/teapot.obj", &teapot_vert_size,  &teapot_vertex_array,
-                                                        &teapot_index_size, &teapot_index_array);
-    printf("%s loaded OBJ.\n", (model_result ? "Failed to" : "Successfully"));
-
-    /* Initialize Geometry */
-    glGenBuffers(1, &m_vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
-    // glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
-    glBufferData(GL_ARRAY_BUFFER, teapot_vert_size*sizeof(float), teapot_vertex_array, GL_STATIC_DRAW);
-
-    // Populate element buffer
-    glGenBuffers(1, &m_ebo);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ebo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, teapot_index_size*sizeof(int), teapot_index_array, GL_STATIC_DRAW);
-
-    // Bind vertex position attribute
-    GLint pos_attr_loc = glGetAttribLocation(m_shader_prog, "fs_Vertex");
-    glEnableVertexAttribArray(pos_attr_loc);
-    glVertexAttribPointer(pos_attr_loc, 3, GL_FLOAT, GL_FALSE, 3*sizeof(GLfloat), (void*)0);
-
-    glBindVertexArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    set_scale(teapot_node_2->data, scale, scale, scale);
+    set_z(teapot_node_2->data,  -0.35f);
+    set_x(teapot_node_2->data, -0.1f);
 
     if (FS_GLscreenInit(current_resolution_x, current_resolution_y)) {
         printf("Failed to initialize core screen!\n");
@@ -318,15 +308,6 @@ int Initialize() {
     }
 
     if (NUKLEAR_ENABLE) FS_nk_consoleInit(fs_sdl_window);
-
-    render.node_start = create_node(NULL, NULL, NULL,
-                                    create_data(create_dynamic_str("Teapot_parent", 13), 14));
-    node* teapot_node_1 = create_node(render.node_start,
-                                      NULL, NULL,
-                                      create_data(create_dynamic_str("Teapot_1", 8), 9));
-    node* teapot_node_2 = create_node(render.node_start,
-                                      NULL, NULL,
-                                      create_data(create_dynamic_str("Teapot_2", 8), 9));
 
     return 0;
 }
@@ -343,15 +324,6 @@ int FS_clean_up() {
 
     glUseProgram(0);
     glDisableVertexAttribArray(0);
-    glDetachShader(m_shader_prog, m_vert_shader);
-    glDetachShader(m_shader_prog, m_frag_shader);
-    glDeleteProgram(m_shader_prog);
-    glDeleteShader(m_vert_shader);
-    glDeleteShader(m_frag_shader);
-    glDeleteTextures(1, &m_tex);
-    glDeleteBuffers(1, &m_ebo);
-    glDeleteBuffers(1, &m_vbo);
-    glDeleteVertexArrays(1, &m_vao);
 
     SDL_GL_DeleteContext(fs_sdl_GLcontext);
     SDL_DestroyWindow(fs_sdl_window);
@@ -367,24 +339,20 @@ int OGL_render_update() {
     glPolygonMode(GL_FRONT_AND_BACK, (mode_wireframe ? GL_LINE : GL_FILL));
     glBindFramebuffer(GL_FRAMEBUFFER, FS_CoreFrameBuffer);
 
-    glClearColor(0.5f, 0.75f, 1.0f, 1.0f);
+    glClearColor(0.5f, 0.75f, 1.0, 1.0);
     glClearDepth(1.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // Render NodeTree
-    glBindVertexArray(m_vao);
-    glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ebo);
-    glUseProgram(m_shader_prog);
-    glDrawElements(GL_TRIANGLES, teapot_index_size, GL_UNSIGNED_INT, 0);
+    renderNode((render.node_start), 0);
 
     // Render CoreScreen
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+    glClearColor(0.0, 0.0, 0.0, 0.0);
     glClearDepth(1.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
     glBindVertexArray(FS_CoreScreenQuadVAO);
     glUseProgram(FS_CoreScreenShaderProgram);
@@ -472,7 +440,7 @@ void SDL_onResize(int w, int h) {
 
 int main(int argc, char *argv[]) {
     bool should_run = true;
-    double fps = 0.0f;
+    double fps = 0.0;
     unsigned long long frame = 0, start_tick = 0;
 
     if (Initialize()) return 1;
@@ -596,12 +564,14 @@ int main(int argc, char *argv[]) {
             nk_end(fs_nk_context);
         }
 
+        set_p(render.node_start->child->data,
+              (float)(frame%360)/45.0f);
         OGL_render_update();
 
-        if (1000.0f / FPS_LIMIT > SDL_GetTicks() - start_tick)
-            SDL_Delay(1000.0f / FPS_LIMIT - (float)(SDL_GetTicks() - start_tick));
+        if (1000.0 / FPS_LIMIT > SDL_GetTicks() - start_tick)
+            SDL_Delay(1000.0 / FPS_LIMIT - (float)(SDL_GetTicks() - start_tick));
 
-        fps = 1000.0f / (float)(SDL_GetTicks() - start_tick);
+        fps = 1000.0 / (float)(SDL_GetTicks() - start_tick);
         frame++;
 
         printf("FPS : %15lf, Frame : %llu\r", fps, frame);

@@ -130,6 +130,23 @@ fs_3d_data* create_data(char* name, int name_len) { //DONE
 int free_data(fs_3d_data** target_data_ptr) { //DONE
     free((*target_data_ptr)->name);
 
+    glUseProgram(0);
+    glDisableVertexAttribArray((*target_data_ptr)->vertex_array);
+    glDetachShader((*target_data_ptr)->program, (*target_data_ptr)->vert_shader);
+    glDetachShader((*target_data_ptr)->program, (*target_data_ptr)->frag_shader);
+    glDeleteProgram((*target_data_ptr)->program);
+    glDeleteShader((*target_data_ptr)->vert_shader);
+    glDeleteShader((*target_data_ptr)->frag_shader);
+    glDeleteBuffers(1, &((*target_data_ptr)->vertex_buffer));
+    glDeleteBuffers(1, &((*target_data_ptr)->element_buffer));
+    glDeleteVertexArrays(1, &((*target_data_ptr)->vertex_array));
+    // glDeleteTextures(1, &m_tex);
+
+    if ((*target_data_ptr)->model_vertex_array)
+        free((*target_data_ptr)->model_vertex_array);
+    if ((*target_data_ptr)->model_index_array)
+        free((*target_data_ptr)->model_index_array);
+
     free_matrix(&((*target_data_ptr)->_transform));
     free_matrix(&((*target_data_ptr)->_scaling));
     
@@ -154,9 +171,9 @@ int free_data(fs_3d_data** target_data_ptr) { //DONE
 }
 
 fs_3d_data* apply_data(fs_3d_data* target) { //DONE
-    target->_transform->mat[3]  = target->pos[0];
-    target->_transform->mat[7]  = target->pos[1];
-    target->_transform->mat[11] = target->pos[2];
+    target->_transform->mat[12] = target->pos[0];
+    target->_transform->mat[13] = target->pos[1];
+    target->_transform->mat[14] = target->pos[2];
 
     target->_scaling->mat[0]  = target->scale[0];
     target->_scaling->mat[5]  = target->scale[1];
@@ -177,9 +194,16 @@ fs_3d_data* apply_data(fs_3d_data* target) { //DONE
     target->_rotating_z->mat[ 4] =  sin(target->rotate[2]);
     target->_rotating_z->mat[ 5] =  cos(target->rotate[2]);
 
+    matrix* tmp_multiply_mat = NULL;
+
     if (!(target->_rotating)) free_matrix(target->_rotating);
-    matrix* tmp_multiply_mat = mat_square_multiply(target->_rotating_x, target->_rotating_y);
+    tmp_multiply_mat = mat_square_multiply(target->_rotating_x, target->_rotating_y);
     target->_rotating = mat_square_multiply(target->_rotating_z, tmp_multiply_mat);
+    free_matrix(tmp_multiply_mat);
+
+    if (!(target->model_mat)) free_matrix(target->model_mat);
+    tmp_multiply_mat = mat_square_multiply(target->_scaling, target->_rotating);
+    target->model_mat = mat_square_multiply(tmp_multiply_mat, target->_transform);
     free_matrix(tmp_multiply_mat);
     return target;
 }

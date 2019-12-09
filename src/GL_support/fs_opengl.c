@@ -131,6 +131,64 @@ GLuint FSgenerateTextureFBO(GLint target_fbo, int w, int h, TextureInfo *info) {
     return tex_id;
 }
 
+node* FSloadModel(node* target, char* model, char* vert, char* frag) {
+    glGenVertexArrays(1, &(target->data->vertex_array));
+    glBindVertexArray(target->data->vertex_array);
+
+    char* tmp_shader_src;
+    tmp_shader_src = file_to_mem(vert);
+    target->data->vert_shader = FScreateShader(GL_VERTEX_SHADER, tmp_shader_src);
+    free(tmp_shader_src);
+    if (target->data->vert_shader == -1) return 1;
+
+    tmp_shader_src = file_to_mem(frag);
+    target->data->frag_shader = FScreateShader(GL_FRAGMENT_SHADER, tmp_shader_src);
+    free(tmp_shader_src);
+    if (target->data->frag_shader == -1) return 1;
+
+    target->data->program = glCreateProgram();
+    glAttachShader(target->data->program, target->data->vert_shader);
+    glAttachShader(target->data->program, target->data->frag_shader);
+    glBindFragDataLocation(target->data->program, 0, "out_Color0");
+    glLinkProgram(target->data->program);
+    glUseProgram(target->data->program);
+
+    int model_result =  loadOBJ(model, &(target->data->model_vertex_size),  &(target->data->model_vertex_array),
+                                       &(target->data->model_index_size), &(target->data->model_index_array));
+    printf("%s loaded OBJ.\n", (model_result ? "Failed to" : "Successfully"));
+
+    /* Initialize Geometry */
+    glGenBuffers(1, &(target->data->vertex_buffer));
+    glBindBuffer(GL_ARRAY_BUFFER, target->data->vertex_buffer);
+    // glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, target->data->model_vertex_size*sizeof(float), target->data->model_vertex_array, GL_STATIC_DRAW);
+
+    // Populate element buffer
+    glGenBuffers(1, &(target->data->element_buffer));
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, target->data->element_buffer);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, target->data->model_index_size*sizeof(int), target->data->model_index_array, GL_STATIC_DRAW);
+
+    // Bind vertex position attribute
+    GLint attrib_vert_pos_loc = glGetAttribLocation(target->data->program, "fs_Vertex");
+    glEnableVertexAttribArray(attrib_vert_pos_loc);
+    glVertexAttribPointer(attrib_vert_pos_loc, 3, GL_FLOAT, GL_FALSE, 3*sizeof(GLfloat), (void*)0);
+
+    GLint uniform_model_mat_loc = glGetUniformLocation(target->data->program, "fs_ModelMatrix");
+    GLint uniform_view_mat_loc  = glGetUniformLocation(target->data->program, "fs_ViewMatrix");
+    GLint uniform_proj_mat_loc  = glGetUniformLocation(target->data->program, "fs_ProjectionMatrix");
+    printf("fs_ModelMatrix %d, fs_ViewMatrix %d, fs_ProjectionMatrix %d\n",
+            uniform_model_mat_loc, uniform_view_mat_loc, uniform_proj_mat_loc);
+    glUniformMatrix4fv(uniform_model_mat_loc, 1, GL_TRUE, target->data->cumulative_model_mat->mat);
+    glUniformMatrix4fv(uniform_view_mat_loc, 1, GL_TRUE, FS_ViewMatrix->mat);
+    glUniformMatrix4fv(uniform_proj_mat_loc, 1, GL_TRUE, FS_ProjectionMatrix->mat);
+
+    glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+    return target;
+}
+
 int FS_GLscreenInit(int resolution_x, int resolution_y) {
     GLint tmp_attr_location;
     char* shader_src;
