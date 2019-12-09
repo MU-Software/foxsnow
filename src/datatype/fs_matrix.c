@@ -5,19 +5,19 @@ matrix* create_matrix(int height, int width, ...) {
 	matrix* mat_return = (matrix*)calloc(1, sizeof(matrix));
 	mat_return->height = height;
 	mat_return->width = width;
-	mat_return->mat = (double*)calloc(height*width, sizeof(double));
+	mat_return->mat = (float*)calloc(height*width, sizeof(float));
 	va_start(ap, width);
 	/* 	int r, c;
 	for (r = 0; r < height; r++) {
 		for (c = 0; c < width; c++) {
-			double target_val = va_arg(ap, double);
+			float target_val = va_arg(ap, float);
 			int target_index = r * width + c;
 			mat_return->mat[target_index] = target_val;
 		}
 	} */
 	int index;
 	for (index=0; index < height*width; index++)
-		mat_return->mat[index] = va_arg(ap, double);
+		mat_return->mat[index] = (float)va_arg(ap, double);
 	va_end(ap);
 	return mat_return;
 }
@@ -25,7 +25,7 @@ matrix* create_identity_matrix(int height) {
 	matrix* mat_return = (matrix*)calloc(1, sizeof(matrix));
 	mat_return->height = height;
 	mat_return->width  = height;
-	mat_return->mat = (double*)calloc(height*height, sizeof(double));
+	mat_return->mat = (float*)calloc(height*height, sizeof(float));
 
 	int r, c;
 	for (r=0; r < height; r++)
@@ -49,7 +49,7 @@ void mat_print(matrix mat) {
 	int r, c;
 	for (r = 0; r < mat.height; r++) {
 		for (c = 0; c < mat.width; c++) {
-			printf("%.3lf ", mat.mat[r * mat.width + c]);
+			printf("%.3f ", mat.mat[r * mat.width + c]);
 		}
 		printf("\n");
 	}
@@ -66,8 +66,8 @@ matrix* mat_plus(matrix* a, matrix* b) {
 	matrix* result = (matrix*)calloc(1, sizeof(matrix));
 	result->height = a->height;
 	result->width  = a->width;
-	result->mat = (double*)calloc(a->height*a->width, sizeof(double));
-	memcpy(result->mat, a->mat, a->height*a->width*sizeof(double));
+	result->mat = (float*)calloc(a->height*a->width, sizeof(float));
+	memcpy(result->mat, a->mat, a->height*a->width*sizeof(float));
 
 	/* int r, c;
 	for (r = 0; r < a->width; r++)
@@ -92,8 +92,8 @@ matrix* mat_minus(matrix* a, matrix* b) {
 	matrix* result = (matrix*)calloc(1, sizeof(matrix));
 	result->height = a->height;
 	result->width  = a->width;
-	result->mat = (double*)calloc(a->height*a->width, sizeof(double));
-	memcpy(result->mat, a->mat, a->height*a->width*sizeof(double));
+	result->mat = (float*)calloc(a->height*a->width, sizeof(float));
+	memcpy(result->mat, a->mat, a->height*a->width*sizeof(float));
 
 	/* 	int r, c;
 	for (r = 0; r < a->width; r++)
@@ -106,7 +106,7 @@ matrix* mat_minus(matrix* a, matrix* b) {
 
 	return result;
 }
-matrix* mat_scala_multiply(matrix* a, double b) {
+matrix* mat_scala_multiply(matrix* a, float b) {
 	if (!a) {
 		printf("MATRIX a is NULL!\n");
 		return NULL;
@@ -114,15 +114,15 @@ matrix* mat_scala_multiply(matrix* a, double b) {
 	matrix* result = (matrix*)calloc(1, sizeof(matrix));
 	result->height = a->height;
 	result->width  = a->width;
-	result->mat = (double*)calloc(a->height*a->width, sizeof(double));
-	memcpy(result->mat, a->mat, a->height*a->width*sizeof(double));
+	result->mat = (float*)calloc(a->height*a->width, sizeof(float));
+	memcpy(result->mat, a->mat, a->height*a->width*sizeof(float));
 
 	int index;
 	for (index = 0; index < result->height * result->width; index++)
 		result->mat[index] *= b;
 	return result;
 }
-matrix* mat_scala_divide(matrix* a, double b) {
+matrix* mat_scala_divide(matrix* a, float b) {
 	if (!a) {
 		printf("MATRIX a is NULL!\n");
 		return NULL;
@@ -130,8 +130,8 @@ matrix* mat_scala_divide(matrix* a, double b) {
 	matrix* result = (matrix*)calloc(1, sizeof(matrix));
 	result->height = a->height;
 	result->width  = a->width;
-	result->mat = (double*)calloc(a->height*a->width, sizeof(double));
-	memcpy(result->mat, a->mat, a->height*a->width*sizeof(double));
+	result->mat = (float*)calloc(a->height*a->width, sizeof(float));
+	memcpy(result->mat, a->mat, a->height*a->width*sizeof(float));
 
 	int index;
 	for (index = 0; index < result->height * result->width; index++)
@@ -151,11 +151,11 @@ matrix* mat_multiply(matrix* a, matrix* b) {
 	matrix* result = (matrix*)calloc(1, sizeof(matrix));
 	result->height = a->height;
 	result->width  = b->width;
-	result->mat = (double*)calloc(result->height*result->width, sizeof(double));
+	result->mat = (float*)calloc(result->height*result->width, sizeof(float));
 	int r, c;
 	for (r = 0; r < result->height; r++)
 		for (c = 0; c < result->width; c++) {
-			double target_val = 0;
+			float target_val = 0;
 			int index;
 			for (index = 0; index < a->width; index++)
 				target_val += a->mat[r * a->width + index] * b->mat[index * b->width + c];
@@ -176,10 +176,10 @@ matrix* mat_square_multiply(matrix* a, matrix* b) {
 	matrix* result = (matrix*)calloc(1, sizeof(matrix));
 	result->height = a->height;
 	result->width  = b->width;
-	result->mat = (double*)calloc(result->height*result->width, sizeof(double));
+	result->mat = (float*)calloc(result->height*result->width, sizeof(float));
 	for (r = 0; r < result->height; r++)
 		for (c = 0; c < result->width; c++) {
-			double target_val = 0;
+			float target_val = 0;
 			int index;
 			for (index = 0; index < a->width; index++)
 				target_val += a->mat[r * a->width + index] * b->mat[index * a->width + c];
@@ -198,9 +198,9 @@ matrix* mat_divide(matrix* a, matrix* b) {
 void mat_test(void) {
 	printf("-----Matrix Creation & Free Test--------\n");
 	matrix* new_mat = create_matrix(3, 3,
-							1., 2., 3.,
-							4., 5., 6.,
-							7., 8., 9.);
+							1.0f, 2.0f, 3.0f,
+							4.0f, 5.0f, 6.0f,
+							7.0f, 8.0f, 9.0f);
 	mat_print(*new_mat);
 	printf("-----Matrix Plus & Minus Test-----------\n");
 	matrix* mat_res_plus = mat_plus(new_mat, new_mat);
@@ -224,15 +224,15 @@ void mat_test(void) {
 	free_matrix(&new_mat);
 	printf("-----Square Matrix Multiply Test--------\n");
 	matrix* tmp_mat_1 = create_matrix(4, 4,
-							 1.,  2.,  3.,  4.,
-							 5.,  6.,  7.,  8.,
-							 9., 10., 11., 12.,
-							13., 14., 15., 16.);
+							 1.0f,  2.0f,  3.0f,  4.0f,
+							 5.0f,  6.0f,  7.0f,  8.0f,
+							 9.0f, 10.0f, 11.0f, 12.0f,
+							13.0f, 14.0f, 15.0f, 16.0f);
 	matrix* tmp_mat_2 = create_matrix(4, 4,
-							 1.,  2.,  3.,  4.,
-							 5.,  6.,  7.,  8.,
-							 9., 10., 11., 12.,
-							13., 14., 15., 16.);
+							 1.0f,  2.0f,  3.0f,  4.0f,
+							 5.0f,  6.0f,  7.0f,  8.0f,
+							 9.0f, 10.0f, 11.0f, 12.0f,
+							13.0f, 14.0f, 15.0f, 16.0f);
 	matrix* mat_res_square_mul = mat_square_multiply(tmp_mat_1, tmp_mat_2);
 	mat_print(*mat_res_square_mul);
 	/*
@@ -248,13 +248,13 @@ void mat_test(void) {
 	free_matrix(&tmp_mat_2);
 	printf("-----Normal Matrix Multiply Test--------\n");
 	matrix* tmp_mat_a = create_matrix(4, 2,
-							1.,  2., 
-							3.,  4.,
-							5.,  6.,
-							7.,  8.);
+							1.0f,  2.0f, 
+							3.0f,  4.0f,
+							5.0f,  6.0f,
+							7.0f,  8.0f);
 	matrix* tmp_mat_b = create_matrix(2, 5,
-							1.,  2.,  3.,  4.,  5.,
-							6.,  7.,  8.,  9., 10.);
+							1.0f,  2.0f,  3.0f,  4.0f,  5.0f,
+							6.0f,  7.0f,  8.0f,  9.0f, 10.0f);
 	matrix* mat_res_mul = mat_multiply(tmp_mat_a, tmp_mat_b);
 	mat_print(*mat_res_mul);
 	/*

@@ -20,6 +20,11 @@
 		GLuint frag_shader;
 		GLuint program;
 
+        int model_vertex_size;
+        int model_index_size;
+        float* model_vertex_array;
+        int* model_index_array;
+
 		GLuint vertex_array;
 		GLuint vertex_buffer;
 		GLuint element_buffer;

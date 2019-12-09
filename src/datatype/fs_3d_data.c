@@ -16,59 +16,59 @@ fs_3d_data* deep_copy_data(fs_3d_data* target_data) { //DONE
 	memcpy(result, target_data, sizeof(fs_3d_data));
     
     if (target_data->_transform) {
-        result->_transform = create_matrix(4, 4, 1, 0, 0, 0,
-                                                 0, 1, 0, 0,
-                                                 0, 0, 1, 0,
-                                                 0, 0, 0, 1);
+        result->_transform = create_matrix(4, 4, 1.0f, 0.0f, 0.0f, 0.0f,
+                                                 0.0f, 1.0f, 0.0f, 0.0f,
+                                                 0.0f, 0.0f, 1.0f, 0.0f,
+                                                 0.0f, 0.0f, 0.0f, 1.0f);
         memcpy(result->_transform->mat, target_data->_transform->mat, sizeof(float)*4*4);
     }
     if (target_data->_scaling) {
-        result->_scaling = create_matrix(4, 4, 1, 0, 0, 0,
-                                                 0, 1, 0, 0,
-                                                 0, 0, 1, 0,
-                                                 0, 0, 0, 1);
+        result->_scaling = create_matrix(4, 4, 1.0f, 0.0f, 0.0f, 0.0f,
+                                               0.0f, 1.0f, 0.0f, 0.0f,
+                                               0.0f, 0.0f, 1.0f, 0.0f,
+                                               0.0f, 0.0f, 0.0f, 1.0f);
         memcpy(result->_scaling->mat, target_data->_scaling->mat, sizeof(float)*4*4);
     }
     if (target_data->_rotating_x) {
-        result->_rotating_x = create_matrix(4, 4, 1, 0, 0, 0,
-                                                 0, 1, 0, 0,
-                                                 0, 0, 1, 0,
-                                                 0, 0, 0, 1);
+        result->_rotating_x = create_matrix(4, 4, 1.0f, 0.0f, 0.0f, 0.0f,
+                                                  0.0f, 1.0f, 0.0f, 0.0f,
+                                                  0.0f, 0.0f, 1.0f, 0.0f,
+                                                  0.0f, 0.0f, 0.0f, 1.0f);
         memcpy(result->_rotating_x->mat, target_data->_rotating_x->mat, sizeof(float)*4*4);
     }
     if (target_data->_rotating_y) {
-        result->_rotating_y = create_matrix(4, 4, 1, 0, 0, 0,
-                                                 0, 1, 0, 0,
-                                                 0, 0, 1, 0,
-                                                 0, 0, 0, 1);
+        result->_rotating_y = create_matrix(4, 4, 1.0f, 0.0f, 0.0f, 0.0f,
+                                                  0.0f, 1.0f, 0.0f, 0.0f,
+                                                  0.0f, 0.0f, 1.0f, 0.0f,
+                                                  0.0f, 0.0f, 0.0f, 1.0f);
         memcpy(result->_rotating_y->mat, target_data->_rotating_y->mat, sizeof(float)*4*4);
     }
     if (target_data->_rotating_z) {
-        result->_rotating_z = create_matrix(4, 4, 1, 0, 0, 0,
-                                                 0, 1, 0, 0,
-                                                 0, 0, 1, 0,
-                                                 0, 0, 0, 1);
+        result->_rotating_z = create_matrix(4, 4, 1.0f, 0.0f, 0.0f, 0.0f,
+                                                  0.0f, 1.0f, 0.0f, 0.0f,
+                                                  0.0f, 0.0f, 1.0f, 0.0f,
+                                                  0.0f, 0.0f, 0.0f, 1.0f);
         memcpy(result->_rotating_z->mat, target_data->_rotating_z->mat, sizeof(float)*4*4);
     }
     if (target_data->_rotating) {
-        result->_rotating  = create_matrix(4, 4, 1, 0, 0, 0,
-                                                 0, 1, 0, 0,
-                                                 0, 0, 1, 0,
-                                                 0, 0, 0, 1);
+        result->_rotating  = create_matrix(4, 4, 1.0f, 0.0f, 0.0f, 0.0f,
+                                                 0.0f, 1.0f, 0.0f, 0.0f,
+                                                 0.0f, 0.0f, 1.0f, 0.0f,
+                                                 0.0f, 0.0f, 0.0f, 1.0f);
         memcpy(result->_rotating->mat, target_data->_rotating->mat, sizeof(float)*4*4);
     }
     if (target_data->model_mat) {
-        result->model_mat  = create_matrix(4, 4, 1, 0, 0, 0,
-                                                 0, 1, 0, 0,
-                                                 0, 0, 1, 0,
-                                                 0, 0, 0, 1);
+        result->model_mat  = create_matrix(4, 4, 1.0f, 0.0f, 0.0f, 0.0f,
+                                                 0.0f, 1.0f, 0.0f, 0.0f,
+                                                 0.0f, 0.0f, 1.0f, 0.0f,
+                                                 0.0f, 0.0f, 0.0f, 1.0f);
         memcpy(result->model_mat->mat, target_data->model_mat->mat, sizeof(float)*4*4);
     }
     if (target_data->cumulative_model_mat) {
-        result->cumulative_model_mat  = create_matrix(4, 4, 1, 0, 0, 0,
-                                                            0, 1, 0, 0,
-                                                            0, 0, 1, 0,
-                                                            0, 0, 0, 1);
+        result->cumulative_model_mat  = create_matrix(4, 4, 1.0f, 0.0f, 0.0f, 0.0f,
+                                                            0.0f, 1.0f, 0.0f, 0.0f,
+                                                            0.0f, 0.0f, 1.0f, 0.0f,
+                                                            0.0f, 0.0f, 0.0f, 1.0f);
         memcpy(result->cumulative_model_mat->mat, target_data->cumulative_model_mat->mat, sizeof(float)*4*4);
     }
 
@@ -81,34 +81,50 @@ fs_3d_data* create_data(char* name, int name_len) { //DONE
 	result->name = name ? name : NULL;
 	result->name_len = name ? name_len : 0;
 
-    result->_transform  = create_matrix(4, 4, 1, 0, 0, 0,
-											  0, 0, 1, 0,
-											  0, 1, 0, 0,
-											  0, 0, 0, 1);
-    result->_scaling    = create_matrix(4, 4, 1, 0, 0, 0,
-											  0, 0, 1, 0,
-											  0, 1, 0, 0,
-											  0, 0, 0, 1);
+    result->model_vertex_array = NULL;
+    result->model_index_array = NULL;
 
-    result->_rotating_x = create_matrix(4, 4, 1, 0, 0, 0,
-											  0, 0, 1, 0,
-											  0, 1, 0, 0,
-											  0, 0, 0, 1);
-    result->_rotating_y = create_matrix(4, 4, 1, 0, 0, 0,
-											  0, 0, 1, 0,
-											  0, 1, 0, 0,
-											  0, 0, 0, 1);
-    result->_rotating_z = create_matrix(4, 4, 1, 0, 0, 0,
-											  0, 0, 1, 0,
-											  0, 1, 0, 0,
-											  0, 0, 0, 1);
-    result->_rotating   = create_matrix(4, 4, 1, 0, 0, 0,
-											  0, 0, 1, 0,
-											  0, 1, 0, 0,
-											  0, 0, 0, 1);
+    int z;
+    for(z=0; z<3; z++) {
+        result->pos[z] = 0.0f;
+        result->scale[z] = 1.0f;
+        result->rotate[z] = 0.0f;
+    }
 
-	result->model_mat = NULL;
-	result->cumulative_model_mat = NULL;
+    result->_transform  = create_matrix(4, 4, 1.0f, 0.0f, 0.0f, 0.0f,
+											  0.0f, 1.0f, 0.0f, 0.0f,
+											  0.0f, 0.0f, 1.0f, 0.0f,
+											  0.0f, 0.0f, 0.0f, 1.0f);
+    result->_scaling    = create_matrix(4, 4, 1.0f, 0.0f, 0.0f, 0.0f,
+											  0.0f, 1.0f, 0.0f, 0.0f,
+											  0.0f, 0.0f, 1.0f, 0.0f,
+											  0.0f, 0.0f, 0.0f, 1.0f);
+
+    result->_rotating_x = create_matrix(4, 4, 1.0f, 0.0f, 0.0f, 0.0f,
+											  0.0f, 1.0f, 0.0f, 0.0f,
+											  0.0f, 0.0f, 1.0f, 0.0f,
+											  0.0f, 0.0f, 0.0f, 1.0f);
+    result->_rotating_y = create_matrix(4, 4, 1.0f, 0.0f, 0.0f, 0.0f,
+											  0.0f, 1.0f, 0.0f, 0.0f,
+											  0.0f, 0.0f, 1.0f, 0.0f,
+											  0.0f, 0.0f, 0.0f, 1.0f);
+    result->_rotating_z = create_matrix(4, 4, 1.0f, 0.0f, 0.0f, 0.0f,
+											  0.0f, 1.0f, 0.0f, 0.0f,
+											  0.0f, 0.0f, 1.0f, 0.0f,
+											  0.0f, 0.0f, 0.0f, 1.0f);
+    result->_rotating   = create_matrix(4, 4, 1.0f, 0.0f, 0.0f, 0.0f,
+											  0.0f, 1.0f, 0.0f, 0.0f,
+											  0.0f, 0.0f, 1.0f, 0.0f,
+											  0.0f, 0.0f, 0.0f, 1.0f);
+
+	result->model_mat   = create_matrix(4, 4, 1.0f, 0.0f, 0.0f, 0.0f,
+											  0.0f, 1.0f, 0.0f, 0.0f,
+											  0.0f, 0.0f, 1.0f, 0.0f,
+											  0.0f, 0.0f, 0.0f, 1.0f);
+	result->cumulative_model_mat   = create_matrix(4, 4, 1.0f, 0.0f, 0.0f, 0.0f,
+										                 0.0f, 1.0f, 0.0f, 0.0f,
+										                 0.0f, 0.0f, 1.0f, 0.0f,
+										                 0.0f, 0.0f, 0.0f, 1.0f);
 	return result;
 }
 int free_data(fs_3d_data** target_data_ptr) { //DONE
