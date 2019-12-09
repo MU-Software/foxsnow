@@ -301,6 +301,16 @@ int Initialize() {
     set_scale(teapot_node_2->data, scale, scale, scale);
     set_z(teapot_node_2->data,  -0.35f);
     set_x(teapot_node_2->data, -0.1f);
+    set_z(teapot_node_1->data,  -0.35f);
+
+    node* teapot_node_3 = create_node(teapot_node_1,
+                                      renderNodeIn, renderNodeOut,
+                                      create_data(create_dynamic_str("Teapot_3", 8), 9));
+    FSloadModel(teapot_node_3, "resources/teapot.obj", "default.vert.glsl", "default.frag.glsl");
+
+    // set_scale(teapot_node_3->data, 0.005f, 0.005f, 0.005f);
+    set_x(teapot_node_3->data, 10.0f);
+    set_z(teapot_node_3->data, 5.0f);
 
     if (FS_GLscreenInit(current_resolution_x, current_resolution_y)) {
         printf("Failed to initialize core screen!\n");
@@ -445,6 +455,10 @@ int main(int argc, char *argv[]) {
 
     if (Initialize()) return 1;
 
+    static bool mouse_pressed;
+    static bool rotate_node;
+    static int  mouse_first_x;
+    static int  mouse_first_y;
 
     const float ratio[] = {0.9f, 0.1f};
     char *box_buffer = (char*)malloc(sizeof(char)*1024);
@@ -477,7 +491,7 @@ int main(int argc, char *argv[]) {
             }
             else if (event.type == SDL_KEYDOWN) {
                 if (event.key.keysym.sym == SDLK_BACKQUOTE) mode_console = !mode_console;
-                
+                else if (event.key.keysym.sym == SDLK_a && !rotate_node) rotate_node = true;
                 if (!mode_console) {
                     if (event.key.keysym.sym == SDLK_w) mode_wireframe  = !mode_wireframe;
                     else if (event.key.keysym.sym == SDLK_f) {
@@ -492,6 +506,18 @@ int main(int argc, char *argv[]) {
                     else if (event.key.keysym.sym == SDLK_TAB) mode_multiple_viewport = !mode_multiple_viewport;
                     else if (event.key.keysym.sym == SDLK_ESCAPE) should_run = false;
                 }
+            }
+            else if (event.type == SDL_KEYUP) {
+                if (event.key.keysym.sym == SDLK_a) rotate_node = false;
+            }
+            else if (event.type == SDL_MOUSEBUTTONDOWN) {
+                if (!mouse_pressed) {
+                    SDL_GetMouseState(&mouse_first_x, &mouse_first_y);
+                    mouse_pressed = true;
+                }
+            }
+            else if (event.type == SDL_MOUSEBUTTONUP) {
+                mouse_pressed = false;
             }
             if (NUKLEAR_ENABLE) nk_sdl_handle_event(&event);
         }
@@ -559,13 +585,26 @@ int main(int argc, char *argv[]) {
                     }
                 }
                 nk_layout_row_end(fs_nk_context);
-
             }
             nk_end(fs_nk_context);
         }
 
+        if (mouse_pressed) {
+            int current_mouse_pos_x, current_mouse_pos_y,
+                mouse_pos_diff_x, mouse_pos_diff_y;
+            SDL_GetMouseState(&current_mouse_pos_x, &current_mouse_pos_y);
+            set_p(
+                  rotate_node ?
+                        render.node_start->child->child->data
+                      : render.node_start->child_last->data,
+                  (float)(mouse_first_y - current_mouse_pos_x)/64);
+        }
+
+        float* res = get_rotate(*(render.node_start->child->child->data));
+        free(res);
+
         set_p(render.node_start->child->data,
-              (float)(frame%360)/45.0f);
+              (float)(frame%360)/30.0f);
         OGL_render_update();
 
         if (1000.0 / FPS_LIMIT > SDL_GetTicks() - start_tick)

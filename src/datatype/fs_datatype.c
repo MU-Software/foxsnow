@@ -7,10 +7,10 @@ void renderNodeIn(node* target) {
 	if(target->parent) {
 		if (!(target->parent->data->cumulative_model_mat)) {
 			target->parent->data->cumulative_model_mat = create_matrix(4, 4,
-															0.0f, 0.0f, 0.0f, 0.0f,
-															0.0f, 0.0f, 0.0f, 0.0f,
-															0.0f, 0.0f, 0.0f, 0.0f,
-															0.0f, 0.0f, 0.0f, 0.0f);
+															1.0f, 0.0f, 0.0f, 0.0f,
+															0.0f, 1.0f, 0.0f, 0.0f,
+															0.0f, 0.0f, 1.0f, 0.0f,
+															0.0f, 0.0f, 0.0f, 1.0f);
 			memcpy(target->parent->data->cumulative_model_mat->mat,
 				   target->parent->data->model_mat->mat,
 				   sizeof(float)*4*4);
@@ -21,10 +21,10 @@ void renderNodeIn(node* target) {
 	}
 	else {
 		target->data->cumulative_model_mat = create_matrix(4, 4,
-												0.0f, 0.0f, 0.0f, 0.0f,
-												0.0f, 0.0f, 0.0f, 0.0f,
-												0.0f, 0.0f, 0.0f, 0.0f,
-												0.0f, 0.0f, 0.0f, 0.0f);
+												1.0f, 0.0f, 0.0f, 0.0f,
+												0.0f, 1.0f, 0.0f, 0.0f,
+												0.0f, 0.0f, 1.0f, 0.0f,
+												0.0f, 0.0f, 0.0f, 1.0f);
 		memcpy(target->data->cumulative_model_mat->mat,
 			   target->data->model_mat->mat,
 			   sizeof(float)*4*4);
