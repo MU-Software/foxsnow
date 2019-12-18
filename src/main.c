@@ -461,12 +461,11 @@ int main(int argc, char *argv[]) {
     static int  mouse_first_y;
 
     const float ratio[] = {0.9f, 0.1f};
-    char *box_buffer = (char*)malloc(sizeof(char)*1024);
+    char *box_buffer = (char*)calloc(1024, sizeof(char));
     if (box_buffer == NULL) {
-        printf("Error while malloc for console log box\n");
+        printf("Error while calloc for console log box\n");
         return 1;
     }
-    memset(box_buffer, 0, sizeof(char)*1024);
     int box_buffer_size = 1024;
     int box_len = 0;
     char py_con_input_str[2048] = { 0 };

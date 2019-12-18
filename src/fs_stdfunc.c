@@ -45,7 +45,7 @@ char* file_to_mem(char* path) {
 				return 0;
 			}
 
-			str_storage = malloc(sizeof(char) * (file_size + 1));
+			str_storage = (char*)calloc((file_size + 1), sizeof(char));
 
 			if (fseek(fp, 0L, SEEK_SET)) {
 				printf("Error while calculating file size! B");

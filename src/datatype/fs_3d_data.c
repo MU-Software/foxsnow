@@ -267,21 +267,21 @@ fs_3d_data* set_r(fs_3d_data* target, float r) { //DONE
 
 
 float* get_pos(fs_3d_data target) { //DONE
-    float* result = (float*)malloc(sizeof(float)*3);
+    float* result = (float*)calloc(3, sizeof(float));
     int z;
     for(z = 0; z < 3; z++)
         result[z] = target.pos[z];
     return result;
 }
 float* get_scale(fs_3d_data target) { //DONE
-    float* result = (float*)malloc(sizeof(float)*3);
+    float* result = (float*)calloc(3, sizeof(float));
     int z;
     for(z = 0; z < 3; z++)
         result[z] = target.scale[z];
     return result;
 }
 float* get_rotate(fs_3d_data target) { //DONE
-    float* result = (float*)malloc(sizeof(float)*3);
+    float* result = (float*)calloc(3, sizeof(float));
     int z;
     for(z = 0; z < 3; z++)
         result[z] = target.rotate[z];

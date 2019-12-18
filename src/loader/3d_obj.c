@@ -44,10 +44,10 @@ int loadOBJ(char* filename, int* vert_size, float** vert_arr, int** index_size, 
     rewind(file_pointer);
 
     // Create data array
-    int *arr_index = (int*)malloc(sizeof(int)*len_index);
-    float *arr_vertex = (float*)malloc(sizeof(float)*len_vertex);
-    float *arr_texcoord = (float*)malloc(sizeof(float)*len_texcoord);
-    float *arr_normal = (float*)malloc(sizeof(float)*len_normal);
+    int *arr_index = (int*)calloc(len_index, sizeof(int));
+    float *arr_vertex = (float*)calloc(len_vertex, sizeof(float));
+    float *arr_texcoord = (float*)calloc(len_texcoord, sizeof(float));
+    float *arr_normal = (float*)calloc(len_normal, sizeof(float));
 
     int index_arr_index = 0,
         index_arr_vertex = 0,
@@ -97,7 +97,7 @@ int loadOBJ(char* filename, int* vert_size, float** vert_arr, int** index_size, 
                     if (!('0' <= target_char && target_char <= '9') && !(target_char == '.') && !(target_char == '-')) {
                         printf("OBJ_LOADER > Wrong %s data(VALUE IS NOT FLOAT) on line %d.\n",
                                target_type, line_counter);
-                        goto error_after_malloc;
+                        goto error_after_calloc;
                     }
                 }
 
@@ -115,7 +115,7 @@ int loadOBJ(char* filename, int* vert_size, float** vert_arr, int** index_size, 
             if (!(len_slice == 4 || len_slice == 5)) {
                 printf("OBJ_LOADER > Wrong %s data(TOO MUCH DATA IN LINE) on line %d.\n",
                        target_type, line_counter);
-                goto error_after_malloc;
+                goto error_after_calloc;
             }
         }
         else if (str_buf[0] == 'f') {
@@ -151,7 +151,7 @@ int loadOBJ(char* filename, int* vert_size, float** vert_arr, int** index_size, 
             // We can assumes that this line has more data than we expect. 
             if (len_slice != 4) {
                 printf("OBJ_LOADER > Wrong FRAG data(TOO MUCH DATA IN LINE) on line %d.\n", line_counter);
-                goto error_after_malloc;
+                goto error_after_calloc;
             }
         }
         memset(str_buf, 0, sizeof(str_buf));
@@ -164,7 +164,7 @@ int loadOBJ(char* filename, int* vert_size, float** vert_arr, int** index_size, 
 
     return 0;
 
-    error_after_malloc:
+    error_after_calloc:
         free(arr_index);
         free(arr_vertex);
         free(arr_texcoord);
