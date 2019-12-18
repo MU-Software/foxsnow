@@ -34,10 +34,13 @@ matrix* create_identity_matrix(int height) {
 	return mat_return;
 }
 void free_matrix(matrix** mat_pointer) {
-	if (!mat_pointer) {
+	if (mat_pointer) {
 		free((*mat_pointer)->mat);
 		free(*mat_pointer);
 		*mat_pointer = NULL;
+	}
+	else {
+		printf("NULL_PTR on free_matrix = %p\n", mat_pointer);
 	}
 }
 

@@ -3,28 +3,21 @@
 void renderNodeIn(node* target) {
 	if (!target) return;
 	apply_data(target->data);
-
-	if(target->parent) {
-		if (!(target->parent->data->cumulative_model_mat)) {
-			target->parent->data->cumulative_model_mat = create_matrix(4, 4,
-															1.0f, 0.0f, 0.0f, 0.0f,
-															0.0f, 1.0f, 0.0f, 0.0f,
-															0.0f, 0.0f, 1.0f, 0.0f,
-															0.0f, 0.0f, 0.0f, 1.0f);
-			memcpy(target->parent->data->cumulative_model_mat->mat,
-				   target->parent->data->model_mat->mat,
-				   sizeof(float)*4*4);
-		}
+	matrix* tmp_mat;
+	if (target->parent) {
+		if (target->data->cumulative_model_mat) tmp_mat = target->data->cumulative_model_mat;
 		target->data->cumulative_model_mat = mat_square_multiply(
 												target->data->model_mat,
 												target->parent->data->cumulative_model_mat);
+		if (tmp_mat) free_matrix(&tmp_mat);
 	}
 	else {
-		target->data->cumulative_model_mat = create_matrix(4, 4,
-												1.0f, 0.0f, 0.0f, 0.0f,
-												0.0f, 1.0f, 0.0f, 0.0f,
-												0.0f, 0.0f, 1.0f, 0.0f,
-												0.0f, 0.0f, 0.0f, 1.0f);
+		if (!(target->data->cumulative_model_mat))
+			target->data->cumulative_model_mat = create_matrix(4, 4,
+													1.0f, 0.0f, 0.0f, 0.0f,
+													0.0f, 1.0f, 0.0f, 0.0f,
+													0.0f, 0.0f, 1.0f, 0.0f,
+													0.0f, 0.0f, 0.0f, 1.0f);
 		memcpy(target->data->cumulative_model_mat->mat,
 			   target->data->model_mat->mat,
 			   sizeof(float)*4*4);
@@ -56,7 +49,7 @@ int renderNode(node* target, int level) {
 	target->in(target);
 	node* target_child = target->child;
 	while(target_child) {
-		node_postorder(target_child, level+1);
+		renderNode(target_child, level+1);
 		target_child = target_child->next;
 	}
 	target->out(target);

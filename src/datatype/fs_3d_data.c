@@ -196,15 +196,15 @@ fs_3d_data* apply_data(fs_3d_data* target) { //DONE
 
     matrix* tmp_multiply_mat = NULL;
 
-    if (!(target->_rotating)) free_matrix(target->_rotating);
+    if (target->_rotating) free_matrix(&(target->_rotating));
     tmp_multiply_mat = mat_square_multiply(target->_rotating_x, target->_rotating_y);
     target->_rotating = mat_square_multiply(target->_rotating_z, tmp_multiply_mat);
-    free_matrix(tmp_multiply_mat);
+    free_matrix(&tmp_multiply_mat);
 
-    if (!(target->model_mat)) free_matrix(target->model_mat);
+    if (target->model_mat) free_matrix(&(target->model_mat));
     tmp_multiply_mat = mat_square_multiply(target->_scaling, target->_rotating);
     target->model_mat = mat_square_multiply(tmp_multiply_mat, target->_transform);
-    free_matrix(tmp_multiply_mat);
+    free_matrix(&tmp_multiply_mat);
     return target;
 }
 
