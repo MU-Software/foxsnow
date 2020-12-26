@@ -1,0 +1,123 @@
+LIBRARY FOXSNOW
+EXPORTS
+	FS_GLscreenInit
+	FS_clean_up
+	FS_init
+	FS_runmain
+	FScalculatePerspectiveMatrix
+	FScalculateViewFrustum
+	FScreateShader
+	FScreateTexture
+	FSgenerateTextureFBO
+	FSnode_loadOBJ
+	FSnode_setShader
+	FSnode_unsetShader
+	MessageCallback
+	OGL_render_update
+	SDL_onResize
+	_rbtree_black_insert
+	_rbtree_case_left
+	_rbtree_case_right
+	_rbtree_free_recursive
+	_rbtree_insert_fix
+	_rbtree_rotate_left
+	_rbtree_rotate_right
+	adjustWindowSize
+	apply_data
+	commitCamera
+	commit_point_cache_in_face
+	computeNormalOfPlane
+	create_data
+	create_identity_matrix
+	create_list
+	create_matrix
+	create_node
+	debug_print
+	dummy_print
+	find_eaindex_from_list
+	free_data
+	free_list
+	free_matrix
+	free_node
+	fs_file_to_mem
+	getRadian
+	get_current_time
+	get_elapsed_time
+	get_pos
+	get_rotate
+	get_scale
+	glhTranslatef2
+	hash
+	is_uncle_red
+	list_append
+	list_clear
+	list_get
+	list_get_element
+	list_index
+	list_insert
+	list_pop
+	list_print
+	list_remove
+	list_to_heap_array_float
+	loadDDS
+	loadOBJ_new
+	loadPNG
+	main
+	mat_divide
+	mat_minus
+	mat_multiply
+	mat_plus
+	mat_print
+	mat_scala_divide
+	mat_scala_multiply
+	mat_square_multiply
+	mat_test
+	mat_transpose
+	node_print
+	normalizeVector
+	rbtree_free
+	rbtree_insert
+	rbtree_print
+	rbtree_search
+	renderNode
+	renderNodeIn
+	renderNodeOut
+	set_h
+	set_p
+	set_pos
+	set_r
+	set_rotate
+	set_scale
+	set_sx
+	set_sy
+	set_sz
+	set_x
+	set_y
+	set_z
+	FPS_LIMIT DATA
+	FS_CoreFrameBuffer DATA
+	FS_CoreFrameBufferTexture DATA
+	FS_CoreScreenFragShader DATA
+	FS_CoreScreenQuadTexCoord DATA
+	FS_CoreScreenQuadVAO DATA
+	FS_CoreScreenQuadVBO DATA
+	FS_CoreScreenQuadVert DATA
+	FS_CoreScreenShaderProgram DATA
+	FS_CoreScreenVertShader DATA
+	FS_GL_VERSION_LIST_LEN DATA
+	FS_ProjectionMatrix DATA
+	FS_ViewMatrix DATA
+	TARGET_GL_MAJOR_VERSION DATA
+	TARGET_GL_MINOR_VERSION DATA
+	camera DATA
+	current_resolution_x DATA
+	current_resolution_y DATA
+	fs_sdl_GLcontext DATA
+	fs_sdl_window DATA
+	log_file DATA
+	mode_fullscreen DATA
+	mode_multiple_viewport DATA
+	mode_wireframe DATA
+	render DATA
+	render2d DATA
+	title DATA
