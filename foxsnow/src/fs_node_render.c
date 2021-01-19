@@ -17,12 +17,14 @@ void commitCamera() {
 
 	float upVector3D[3] = { 0.0f, 1.0f, 0.0f };
 	normalizeVector(upVector3D);
-	float up[3] = { 0.0f, 0.0f, 0.0f };
+	float up[3] = { 0.0f };
 	float size[3] = { 0.0f };
 	float forward[3] = { 0.0f };
 	forward[0] = camera.lookPoint[0] - camera.pos[0];
 	forward[1] = camera.lookPoint[1] - camera.pos[1];
 	forward[2] = camera.lookPoint[2] - camera.pos[2];
+	//dprint("UP %f, %f, %f | SIZE %f, %f, %f | FORWARD %f, %f, %f\r",
+			//up[0], up[1], up[2], size[0], size[1], size[2], forward[0], forward[1], forward[2]);
 	normalizeVector(forward);
 	computeNormalOfPlane(&size, &forward, &upVector3D);
 	normalizeVector(size);

@@ -2,7 +2,7 @@ LIBRARY FOXSNOW
 EXPORTS
 	FS_GLscreenInit
 	FS_clean_up
-	FS_init
+	FS_SDL2_init
 	FS_runmain
 	FScalculatePerspectiveMatrix
 	FScalculateViewFrustum
@@ -94,6 +94,9 @@ EXPORTS
 	set_x
 	set_y
 	set_z
+
+	test_env_setup
+
 	FPS_LIMIT DATA
 	FS_CoreFrameBuffer DATA
 	FS_CoreFrameBufferTexture DATA

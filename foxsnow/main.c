@@ -52,6 +52,9 @@ unsigned int current_resolution_y = 600;
 unsigned long long frame_number = 0;
 unsigned long long start_tick = 0;
 
+double rads = 1.5708;
+float cylindricalYLookAtPos = 0;
+
 SDL_Window* fs_sdl_window;
 SDL_GLContext  fs_sdl_GLcontext;
 
@@ -62,7 +65,7 @@ bool mode_fullscreen = false;
 /*
 * Basic Initialization
 */
-int FS_init() {
+int FS_SDL2_init() {
     dprint("Initializing...\n");
 
 //#if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)
@@ -88,6 +91,9 @@ int FS_init() {
         SDL_Quit();
         return 1;
     }
+    SDL_CaptureMouse(SDL_FALSE);
+    SDL_SetRelativeMouseMode(SDL_FALSE);
+    SDL_ShowCursor(SDL_ENABLE);
 
     // Initialize rendering context
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
@@ -142,7 +148,16 @@ int FS_init() {
     glDepthFunc(GL_LESS);
     // glDisable(GL_DEPTH_CLAMP);
     glLineWidth(1.5f);
-    dprint("Set GL successfully.\n");
+
+    GLenum GL_ERROR = 0;
+    if ((GL_ERROR = glGetError()) != GL_NO_ERROR) {
+        dprint("Failed to set some GL state.(GL Error: %d)\n", GL_ERROR);
+        SDL_GL_DeleteContext(fs_sdl_GLcontext);
+        SDL_DestroyWindow(fs_sdl_window);
+        SDL_Quit();
+        return 1;
+    }
+    dprint("GL initialization success.\n");
 
 #ifdef _DEBUG
     // During init, enable debug output
@@ -335,7 +350,7 @@ int FS_runmain(PyObject* fs_py_gamemgr) {
 
     // If we can't initialize engine properly,
     // then it's better to terminate whole program than left something.
-    //FS_init();
+    //FS_SDL2_init();
     //test_env_setup();
 
 #ifdef FS_ENABLE_PYTHON_SUPPORT
@@ -393,6 +408,7 @@ int FS_runmain(PyObject* fs_py_gamemgr) {
             fs_py_gamemgr = NULL;
             fs_py_gamemgr_update_mtd = NULL;
         }
+        test_env_setup();
     }
     else {
 #endif
@@ -403,15 +419,9 @@ int FS_runmain(PyObject* fs_py_gamemgr) {
     }
 #endif
 
-    static bool mouse_pressed;
-    int  mouse_first_x;
-    int  mouse_first_y;
-
-    const float ratio[] = { 0.9f, 0.1f };
-
-    double spherical_coord_theta = 0.0, spherical_coord_phi = 0.0;
-    double prev_spherical_coord_theta = 270.0,
-           prev_spherical_coord_phi = 90.0;
+    bool mouse_right_pressed = false;
+    bool mouse_left_pressed = false;
+    bool mouse_middle_pressed = false;
 
     dprint("Running...\n");
     while (should_run) {
@@ -473,16 +483,16 @@ int FS_runmain(PyObject* fs_py_gamemgr) {
                 }
 
                 // Camera re-centering
-                else if (event.key.keysym.sym == SDLK_F9) {
-                    prev_spherical_coord_theta = 270.0;
-                    prev_spherical_coord_phi = 90.0;
-                    double spherical_coord_theta_rad = getRadian(prev_spherical_coord_theta);
-                    double spherical_coord_phi_rad = getRadian(prev_spherical_coord_phi);
-                    camera.lookPoint[0] = sin(spherical_coord_theta_rad) * cos(spherical_coord_phi_rad) + camera.pos[0];
-                    camera.lookPoint[1] = cos(spherical_coord_theta_rad) * sin(spherical_coord_phi_rad) + camera.pos[1];
-                    camera.lookPoint[2] = sin(spherical_coord_theta_rad) + camera.pos[2];
-                    commitCamera();
-                }
+                //else if (event.key.keysym.sym == SDLK_F9) {
+                //    spherical_coord_theta = 90.0f;
+                //    spherical_coord_phi = 90.0f;
+                //    double spherical_coord_theta_rad = getRadian(spherical_coord_theta);
+                //    double spherical_coord_phi_rad = getRadian(spherical_coord_phi);
+                //    camera.lookPoint[0] = sin(spherical_coord_theta_rad) * cos(spherical_coord_phi_rad) + camera.pos[0];
+                //    camera.lookPoint[1] = cos(spherical_coord_theta_rad) * sin(spherical_coord_phi_rad) + camera.pos[1];
+                //    camera.lookPoint[2] = sin(spherical_coord_theta_rad) + camera.pos[2];
+                //    commitCamera();
+                //}
 
                 // Framebuffer debugging
                 else if (event.key.keysym.sym == SDLK_F10) mode_multiple_viewport = !mode_multiple_viewport;
@@ -502,35 +512,48 @@ int FS_runmain(PyObject* fs_py_gamemgr) {
 #endif
             }
             else if (event.type == SDL_KEYUP) {}
+
             else if (event.type == SDL_MOUSEBUTTONDOWN) {
-                if (!mouse_pressed) {
-                    SDL_GetMouseState(&mouse_first_x, &mouse_first_y);
-                    mouse_pressed = true;
-                }
+                bool* target_btn = NULL;
+                if (event.button.button == SDL_BUTTON_LEFT) target_btn = &mouse_left_pressed;
+                else if (event.button.button == SDL_BUTTON_RIGHT) target_btn = &mouse_right_pressed;
+                else target_btn = &mouse_middle_pressed;
+
+                if (!(*target_btn)) (*target_btn) = true;
             }
             else if (event.type == SDL_MOUSEBUTTONUP) {
-                prev_spherical_coord_theta = spherical_coord_theta;
-                prev_spherical_coord_phi = spherical_coord_phi;
-                mouse_pressed = false;
+                bool* target_btn = NULL;
+                if (event.button.button == SDL_BUTTON_LEFT) target_btn = &mouse_left_pressed;
+                else if (event.button.button == SDL_BUTTON_RIGHT) target_btn = &mouse_right_pressed;
+                else target_btn = &mouse_middle_pressed;
+
+                (*target_btn) = false;
+
+                SDL_CaptureMouse(SDL_FALSE);
+                SDL_SetRelativeMouseMode(SDL_FALSE);
+                SDL_ShowCursor(SDL_ENABLE);
             }
-        }
+            else if (event.type == SDL_MOUSEMOTION) {
+                if (mouse_left_pressed) {
+                    SDL_CaptureMouse(SDL_TRUE);
+                    SDL_SetRelativeMouseMode(SDL_TRUE);
+                    SDL_ShowCursor(SDL_DISABLE);
 
-        if (mouse_pressed) {
-            int current_mouse_pos_x, current_mouse_pos_y, diff_mouse_pos_x, diff_mouse_pos_y;
-            SDL_GetMouseState(&current_mouse_pos_x, &current_mouse_pos_y);
-            spherical_coord_phi = prev_spherical_coord_phi + -((current_mouse_pos_x - mouse_first_x) / (double)current_resolution_x) * 360.0;
-            spherical_coord_theta = prev_spherical_coord_theta + ((current_mouse_pos_y - mouse_first_y) / (double)current_resolution_y) * 360.0;
-            double spherical_coord_theta_rad = getRadian(spherical_coord_theta);
-            double spherical_coord_phi_rad = getRadian(spherical_coord_phi);
-            camera.lookPoint[0] = sin(spherical_coord_theta_rad) * cos(spherical_coord_phi_rad) + camera.pos[0];
-            camera.lookPoint[1] = cos(spherical_coord_theta_rad) * sin(spherical_coord_phi_rad) + camera.pos[1];
-            camera.lookPoint[2] = sin(spherical_coord_theta_rad) + camera.pos[2];
-            commitCamera();
+                    rads -= event.motion.xrel * 0.005f;
 
-            //dprint("Phi = %lf(rad = %lf), Theta = %lf(rad = %lf)\r",
-            //       spherical_coord_phi, spherical_coord_phi_rad,
-            //       spherical_coord_theta, spherical_coord_theta_rad);
+                    float old_cylindricalYLookAtPos = cylindricalYLookAtPos;
+                    cylindricalYLookAtPos -= event.motion.yrel * 0.02f;
+                    if (-15.0f > cylindricalYLookAtPos || cylindricalYLookAtPos > 25.0f)
+                        cylindricalYLookAtPos = old_cylindricalYLookAtPos;
 
+                    camera.lookPoint[0] = camera.pos[0] + (10.0f * cos(rads));
+                    camera.lookPoint[1] = camera.pos[1] + cylindricalYLookAtPos;
+                    camera.lookPoint[2] = camera.pos[2] - (10.0f * sin(rads));
+                    commitCamera();
+
+                    SDL_WarpMouseInWindow(fs_sdl_window, current_resolution_x / 2, current_resolution_y / 2);
+                }
+            }
         }
 
         // Render frame with proper FPS timing
@@ -563,7 +586,7 @@ int FS_runmain(PyObject* fs_py_gamemgr) {
             frame_number++;
             fps = 1000.0 / (float)(SDL_GetTicks() - start_tick);
             double frame_time = tmp_last_render_time - last_render_time;
-            dprint("FPS : %15lf(%lfms), Frame : %llu\r", fps, frame_time / 1000, frame_number);
+            //dprint("FPS : %15lf(%lfms), Frame : %llu\r", fps, frame_time / 1000, frame_number);
             last_render_time = tmp_last_render_time;
         }
     }
@@ -580,7 +603,7 @@ int FS_runmain(PyObject* fs_py_gamemgr) {
 }
 
 int main(int argc, char* argv[]) {
-    FS_init();
+    FS_SDL2_init();
     FS_runmain(NULL);
     return 0;
 }
