@@ -23,7 +23,7 @@ void commitCamera() {
 	forward[0] = camera.lookPoint[0] - camera.pos[0];
 	forward[1] = camera.lookPoint[1] - camera.pos[1];
 	forward[2] = camera.lookPoint[2] - camera.pos[2];
-	//dprint("UP %f, %f, %f | SIZE %f, %f, %f | FORWARD %f, %f, %f\r",
+	//dprint("UP %f, %f, %f | SIZE %f, %f, %f | FORWARD %f, %f, %f\n",
 			//up[0], up[1], up[2], size[0], size[1], size[2], forward[0], forward[1], forward[2]);
 	normalizeVector(forward);
 	computeNormalOfPlane(&size, &forward, &upVector3D);
@@ -39,9 +39,9 @@ void commitCamera() {
 	FS_ViewMatrix->mat[1] = up[0];
 	FS_ViewMatrix->mat[5] = up[1];
 	FS_ViewMatrix->mat[9] = up[2];
-	FS_ViewMatrix->mat[2] = -forward[0];
-	FS_ViewMatrix->mat[6] = -forward[1];
-	FS_ViewMatrix->mat[10] = -forward[2];
+	FS_ViewMatrix->mat[2] = forward[0];
+	FS_ViewMatrix->mat[6] = forward[1];
+	FS_ViewMatrix->mat[10] = forward[2];
 	glhTranslatef2(FS_ViewMatrix->mat, camera.pos[0], camera.pos[1], camera.pos[2]);
 
 	//FS_ProjectionMatrix = mat_multiply(FS_ProjectionMatrix_withoutCamera, lookup_matrix);

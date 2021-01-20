@@ -30,6 +30,7 @@
 #include "src/fs_node_render.h"
 #include "src/fs_node_control.h"
 #include "src/loader/3d_obj.h"
+#include "src/fs_camera_fps.h"
 
 #define FS_ENABLE_PYTHON_SUPPORT
 
@@ -52,8 +53,10 @@ unsigned int current_resolution_y = 600;
 unsigned long long frame_number = 0;
 unsigned long long start_tick = 0;
 
+bool isColliding = false;
 double rads = 1.5708;
 float cylindricalYLookAtPos = 0;
+float xMovementSpeed = 0, yMovementSpeed = 0;
 
 SDL_Window* fs_sdl_window;
 SDL_GLContext  fs_sdl_GLcontext;
@@ -309,13 +312,14 @@ void SDL_onResize() {
 
 void test_env_setup() {
     // Load Model
-    float scale = 0.01f;
+    float scale = 1.0f;
     render.node_start = create_node(NULL, renderNodeIn, renderNodeOut, create_data(), strdup("Teapot_parent"));
     node* teapot_node_1 = create_node(render.node_start,
         renderNodeIn, renderNodeOut,
         create_data(), strdup("Teapot_1"));
     FSnode_setShader(teapot_node_1, "default");
     FSnode_loadOBJ(teapot_node_1, "skysphere.obj");
+    set_scale((fs_3d_data*)(teapot_node_1->data), 50.0f, 50.0f, 50.0f);
 
     node* teapot_node_2 = create_node(render.node_start,
         renderNodeIn, renderNodeOut,
@@ -325,19 +329,7 @@ void test_env_setup() {
 
     set_scale((fs_3d_data*)(teapot_node_2->data), scale, scale, scale);
 
-    node* teapot_node_3 = create_node(teapot_node_1,
-        renderNodeIn, renderNodeOut,
-        create_data(), strdup("Teapot_3"));
-    FSnode_setShader(teapot_node_3, "default");
-    FSnode_loadOBJ(teapot_node_3, "teapot.obj");
-
-    set_scale((fs_3d_data*)(teapot_node_1->data), 0.5f, 0.5f, 0.5f);
-    set_scale((fs_3d_data*)(teapot_node_3->data), scale, scale, scale);
-
     set_z((fs_3d_data*)(teapot_node_1->data), -0.35f);
-    set_z((fs_3d_data*)(teapot_node_3->data), -0.1f);
-    set_x((fs_3d_data*)(teapot_node_3->data), -0.1f);
-
 }
 
 int FS_runmain(PyObject* fs_py_gamemgr) {
@@ -436,31 +428,29 @@ int FS_runmain(PyObject* fs_py_gamemgr) {
                 SDL_onResize();
             }
             else if (event.type == SDL_KEYDOWN) {
-                float cammove = 0.001;
+                float cammove = 0.001f;
                 if (event.key.keysym.sym == SDLK_ESCAPE) should_run = false;
 
                 else if (event.key.keysym.sym == SDLK_w) {
-                    camera.pos[2] += cammove;
-                    commitCamera();
+                    xMovementSpeed = 1.0f;
                 }
                 else if (event.key.keysym.sym == SDLK_a) {
-                    camera.pos[0] += cammove;
-                    commitCamera();
+                    yMovementSpeed = 1.0f;
                 }
                 else if (event.key.keysym.sym == SDLK_s) {
-                    camera.pos[2] -= cammove;
-                    commitCamera();
+                    xMovementSpeed = -1.0f;
                 }
                 else if (event.key.keysym.sym == SDLK_d) {
-                    camera.pos[0] -= cammove;
-                    commitCamera();
+                    yMovementSpeed = -1.0f;
                 }
                 else if (event.key.keysym.sym == SDLK_q) {
-                    camera.pos[1] -= cammove;
+                    camera.pos[1] -= 1.0f;
+                    camera.lookPoint[1] -= 1.0f;
                     commitCamera();
                 }
                 else if (event.key.keysym.sym == SDLK_e) {
-                    camera.pos[1] += cammove;
+                    camera.pos[1] += 1.0f;
+                    camera.lookPoint[1] += 1.0f;
                     commitCamera();
                 }
 
@@ -511,7 +501,19 @@ int FS_runmain(PyObject* fs_py_gamemgr) {
                 else if (event.key.keysym.sym == SDLK_F12) mode_wireframe = !mode_wireframe;
 #endif
             }
-            else if (event.type == SDL_KEYUP) {}
+
+            else if (event.type == SDL_KEYUP) {
+                switch (event.key.keysym.sym) {
+                case SDLK_w:
+                case SDLK_s:
+                    xMovementSpeed = 0;
+                    break;
+                case SDLK_a:
+                case SDLK_d:
+                    yMovementSpeed = 0;
+                    break;
+                }
+            }
 
             else if (event.type == SDL_MOUSEBUTTONDOWN) {
                 bool* target_btn = NULL;
@@ -539,22 +541,14 @@ int FS_runmain(PyObject* fs_py_gamemgr) {
                     SDL_SetRelativeMouseMode(SDL_TRUE);
                     SDL_ShowCursor(SDL_DISABLE);
 
-                    rads -= event.motion.xrel * 0.005f;
-
-                    float old_cylindricalYLookAtPos = cylindricalYLookAtPos;
-                    cylindricalYLookAtPos -= event.motion.yrel * 0.02f;
-                    if (-15.0f > cylindricalYLookAtPos || cylindricalYLookAtPos > 25.0f)
-                        cylindricalYLookAtPos = old_cylindricalYLookAtPos;
-
-                    camera.lookPoint[0] = camera.pos[0] + (10.0f * cos(rads));
-                    camera.lookPoint[1] = camera.pos[1] + cylindricalYLookAtPos;
-                    camera.lookPoint[2] = camera.pos[2] - (10.0f * sin(rads));
-                    commitCamera();
+                    FS_camera_fps_rotation(event.motion.xrel, event.motion.yrel);
 
                     SDL_WarpMouseInWindow(fs_sdl_window, current_resolution_x / 2, current_resolution_y / 2);
                 }
             }
         }
+
+        FS_camera_fps_position();
 
         // Render frame with proper FPS timing
         double tmp_last_render_time = 0;

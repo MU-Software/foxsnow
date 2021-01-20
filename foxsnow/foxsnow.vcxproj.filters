@@ -60,6 +60,9 @@
     <ClCompile Include="src\loader\3d_obj.c">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="src\fs_camera_fps.c">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\fs_opengl.h">
@@ -99,6 +102,9 @@
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="src\loader\3d_obj.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="src\fs_camera_fps.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>

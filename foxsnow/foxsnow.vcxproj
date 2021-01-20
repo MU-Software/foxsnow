@@ -162,6 +162,7 @@
     <ClCompile Include="src\datatype\fs_matrix.c" />
     <ClCompile Include="src\datatype\fs_node.c" />
     <ClCompile Include="src\datatype\fs_rbtree.c" />
+    <ClCompile Include="src\fs_camera_fps.c" />
     <ClCompile Include="src\fs_node_control.c" />
     <ClCompile Include="src\fs_node_render.c" />
     <ClCompile Include="src\fs_opengl.c" />
@@ -177,6 +178,7 @@
     <ClInclude Include="src\datatype\fs_matrix.h" />
     <ClInclude Include="src\datatype\fs_node.h" />
     <ClInclude Include="src\datatype\fs_rbtree.h" />
+    <ClInclude Include="src\fs_camera_fps.h" />
     <ClInclude Include="src\fs_node_control.h" />
     <ClInclude Include="src\fs_node_render.h" />
     <ClInclude Include="src\fs_opengl.h" />
