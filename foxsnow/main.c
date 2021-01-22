@@ -49,6 +49,8 @@ int TARGET_GL_MINOR_VERSION = 0;
 const int FPS_LIMIT = 60;
 unsigned int current_resolution_x = 800;
 unsigned int current_resolution_y = 600;
+float perspective_plane_near = 1.0f;
+float perspective_plane_far = 100000.0f;
 
 unsigned long long frame_number = 0;
 unsigned long long start_tick = 0;
@@ -174,13 +176,18 @@ int FS_SDL2_init() {
     }
 #endif
 
-    FS_ViewMatrix = create_identity_matrix(4, 4);
+    FS_ViewMatrix = create_identity_matrix(4);
     FS_ProjectionMatrix = create_matrix(4, 4,
         0.0f, 0.0f, 0.0f, 0.0f,
         0.0f, 0.0f, 0.0f, 0.0f,
         0.0f, 0.0f, 0.0f, 0.0f,
         0.0f, 0.0f, 0.0f, 0.0f);
-    FScalculatePerspectiveMatrix(FS_ProjectionMatrix, 40.f, 800.f/600.f, 1.f, 100.f);
+    FScalculatePerspectiveMatrix(
+        FS_ProjectionMatrix,
+        40.f,
+        (float)current_resolution_x/(float)current_resolution_y,
+        perspective_plane_near,
+        perspective_plane_far);
 
     camera.lookPoint[2] = -1.0f;
     commitCamera();
@@ -285,7 +292,13 @@ int OGL_render_update() {
 void SDL_onResize() {
     SDL_GetWindowSize(fs_sdl_window, &current_resolution_x, &current_resolution_y);
 
-    FScalculatePerspectiveMatrix(FS_ProjectionMatrix, 40.f, (float)current_resolution_x / (float)current_resolution_y, 1.f, 100.f);
+    FScalculatePerspectiveMatrix(
+        FS_ProjectionMatrix,
+        40.f,
+        (float)current_resolution_x / (float)current_resolution_y,
+        perspective_plane_near,
+        perspective_plane_far);
+
     commitCamera();
 
     glDeleteFramebuffers(1, &FS_CoreFrameBuffer);
