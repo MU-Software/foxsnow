@@ -14,7 +14,6 @@ void glhTranslatef2(float* matrix, float x, float y, float z) {
 }
 
 void commitCamera() {
-
 	float upVector3D[3] = { 0.0f, 1.0f, 0.0f };
 	normalizeVector(upVector3D);
 	float up[3] = { 0.0f };
@@ -89,37 +88,40 @@ void renderNodeIn(node* target) {
 
 void renderNodeOut(node* target) {
 	fs_3d_data* target_data = (fs_3d_data*)(target->data);
-	if (target_data->vertex_array) {
-		glBindVertexArray(target_data->vertex_array);
-		glUseProgram(target_data->shader_program);
+	if (target_data->model) {
+		FS_Type_3D_PolyModel* target_model = (FS_Type_3D_PolyModel*)target_data->model->data;
+		glBindVertexArray(target_model->vertex_array);
 
-		GLint uniform_model_mat_loc = glGetUniformLocation(target_data->shader_program, "fs_ModelMatrix");
-		GLint uniform_view_mat_loc = glGetUniformLocation(target_data->shader_program, "fs_ViewMatrix");
-		GLint uniform_proj_mat_loc = glGetUniformLocation(target_data->shader_program, "fs_ProjectionMatrix");
+		GLuint target_shader = ((FS_Type_ShaderInfo*)(target_data->shader->data))->shader_program;
+		glUseProgram(target_shader);
+
+		GLint uniform_model_mat_loc = glGetUniformLocation(target_shader, "fs_ModelMatrix");
+		GLint uniform_view_mat_loc = glGetUniformLocation(target_shader, "fs_ViewMatrix");
+		GLint uniform_proj_mat_loc = glGetUniformLocation(target_shader, "fs_ProjectionMatrix");
 		glUniformMatrix4fv(uniform_model_mat_loc, 1, GL_FALSE, target_data->cumulative_model_mat->mat);
 		glUniformMatrix4fv(uniform_view_mat_loc, 1, GL_FALSE, FS_ViewMatrix->mat);
 		glUniformMatrix4fv(uniform_proj_mat_loc, 1, GL_FALSE, FS_ProjectionMatrix->mat);
 
-		GLint uniform_frame_number_loc = glGetUniformLocation(target_data->shader_program, "fs_FrameNumber");
-		GLint uniform_screen_size_loc = glGetUniformLocation(target_data->shader_program, "fs_ScreenSize");
+		GLint uniform_frame_number_loc = glGetUniformLocation(target_shader, "fs_FrameNumber");
+		GLint uniform_screen_size_loc = glGetUniformLocation(target_shader, "fs_ScreenSize");
 		glUniform1ui(uniform_frame_number_loc, frame_number);
 		glUniform2ui(uniform_screen_size_loc, current_resolution_x, current_resolution_y);
 
-		GLint uniform_object_position_loc = glGetUniformLocation(target_data->shader_program, "fs_ObjectPosition");
+		GLint uniform_object_position_loc = glGetUniformLocation(target_shader, "fs_ObjectPosition");
 		glUniform3fv(uniform_object_position_loc, 3, target_data->pos);
 
-		GLint uniform_camera_position_loc = glGetUniformLocation(target_data->shader_program, "fs_CameraPosition");
+		GLint uniform_camera_position_loc = glGetUniformLocation(target_shader, "fs_CameraPosition");
 		glUniform3fv(uniform_camera_position_loc, 3, camera.pos);
 
 		int current_texture_index = 0;
-		list_element* target_texture_element = target_data->texture_list->head;
+		list_element* target_texture_element = target_model->texture_list->head;
 		while (target_texture_element) {
 			glActiveTexture(GL_TEXTURE0 + current_texture_index);
 			glBindTexture(GL_TEXTURE_2D, ((TextureInfo*)(target_texture_element->data))->texture_id);
 
 			char texture_uniform_name[32] = { 0 };
 			sprintf(texture_uniform_name, "fs_Texture%d", current_texture_index);
-			int texture_uniform_loc = glGetUniformLocation(target_data->shader_program, texture_uniform_name);
+			int texture_uniform_loc = glGetUniformLocation(target_shader, texture_uniform_name);
 			if (texture_uniform_loc != -1) {
 				glUniform1i(texture_uniform_loc, current_texture_index);
 			}
@@ -129,8 +131,8 @@ void renderNodeOut(node* target) {
 		if (target_data->do_backface_cull) glEnable(GL_CULL_FACE);
 		else glDisable(GL_CULL_FACE);
 
-		if (target_data->element_buffer) {
-			glDrawElements(GL_TRIANGLES, target_data->element_buffer_size, GL_UNSIGNED_INT, 0);
+		if (target_model->element_buffer) {
+			glDrawElements(GL_TRIANGLES, target_model->element_buffer_size, GL_UNSIGNED_INT, 0);
 		}
 	}
 }

@@ -7,9 +7,6 @@ fs_3d_data* create_data() {
         exit(1);
     }
 
-    result->model_vertex_array = NULL;
-    result->model_index_array = NULL;
-
     int z;
     for (z = 0; z < 3; z++) {
         result->pos[z] = 0.0f;
@@ -56,16 +53,21 @@ fs_3d_data* create_data() {
 }
 int free_data(fs_3d_data** target_data_ptr) {
     glUseProgram(0);
-    glDisableVertexAttribArray((*target_data_ptr)->vertex_array);
-    glDeleteProgram((*target_data_ptr)->shader_program);
-    glDeleteBuffers(1, &((*target_data_ptr)->vertex_buffer_position));
-    glDeleteBuffers(1, &((*target_data_ptr)->vertex_buffer_normal));
-    glDeleteBuffers(1, &((*target_data_ptr)->element_buffer));
-    glDeleteVertexArrays(1, &((*target_data_ptr)->vertex_array));
+    //glDisableVertexAttribArray((*target_data_ptr)->vertex_array);
+    //glDeleteBuffers(1, &((*target_data_ptr)->vertex_buffer_position));
+    //glDeleteBuffers(1, &((*target_data_ptr)->vertex_buffer_normal));
+    //glDeleteBuffers(1, &((*target_data_ptr)->element_buffer));
+    //glDeleteVertexArrays(1, &((*target_data_ptr)->vertex_array));
     // glDeleteTextures(1, &m_tex);
 
-    free((*target_data_ptr)->shader_name);
-    // TODO we need to free texcoord list and texture list.
+    ((FS_Type_ShaderInfo*)((*target_data_ptr)->shader->data))->reference_count--;
+    (*target_data_ptr)->shader = NULL;
+
+    ((FS_Type_3D_PolyModel*)((*target_data_ptr)->model->data))->reference_count--;
+    (*target_data_ptr)->model = NULL;
+    // TODO: we need to remove shader cache from rbtree
+    // TODO: we need to remove model cache from rbtree
+    // TODO: we need to free texcoord list and texture list.
 
     free_matrix(&((*target_data_ptr)->_transform));
     free_matrix(&((*target_data_ptr)->_scaling));

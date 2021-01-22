@@ -53,6 +53,9 @@ unsigned int current_resolution_y = 600;
 unsigned long long frame_number = 0;
 unsigned long long start_tick = 0;
 
+rbtree_node* cached_shader = NULL;
+rbtree_node* cached_model = NULL;
+
 bool isColliding = false;
 double rads = 1.5708;
 float cylindricalYLookAtPos = 0;

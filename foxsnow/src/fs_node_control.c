@@ -6,7 +6,21 @@ node* FSnode_setShader(node* target, const char* name) {
     fs_3d_data* target_data = (fs_3d_data*)target->data;
     NULL_CHECK(target_data);
 
-    target_data->shader_name = strdup(name);
+    unsigned int shader_name_hash = hash(name);
+    rbtree_node* cache_result = rbtree_search(cached_shader, shader_name_hash);
+    if (cache_result) {
+        target_data->shader = cache_result;
+        ((FS_Type_ShaderInfo*)cache_result->data)->reference_count++;
+        return target;
+    }
+
+    FS_Type_ShaderInfo* new_shader = (FS_Type_ShaderInfo*)calloc(1, sizeof(FS_Type_ShaderInfo));
+    ALLOC_FAILCHECK(new_shader);
+    rbtree_insert(&cached_shader, shader_name_hash, (void*)new_shader, strdup("FS_Type_ShaderInfo"));
+    rbtree_node* new_shader_node = rbtree_search(cached_shader, shader_name_hash);
+    new_shader->reference_count++;
+    new_shader->shader_name = strdup(name);
+    
     char vert_name[128] = { 0 };
     char geom_name[128] = { 0 };
     char frag_name[128] = { 0 };
@@ -42,16 +56,17 @@ node* FSnode_setShader(node* target, const char* name) {
     free(tmp_shader_src);
     if (!frag_shader) return NULL;
 
-    target_data->shader_program = glCreateProgram();
-    glAttachShader(target_data->shader_program, vert_shader);
-    glAttachShader(target_data->shader_program, frag_shader);
-    if (geom_shader) glAttachShader(target_data->shader_program, geom_shader);
+
+    new_shader->shader_program = glCreateProgram();
+    glAttachShader(new_shader->shader_program, vert_shader);
+    glAttachShader(new_shader->shader_program, frag_shader);
+    if (geom_shader) glAttachShader(new_shader->shader_program, geom_shader);
     err = glGetError();
     if (err != GL_NO_ERROR) dprint("ERROR - glError 8: 0x%04X\n", err);
-    glBindFragDataLocation(target_data->shader_program, 0, "out_Color0");
+    glBindFragDataLocation(new_shader->shader_program, 0, "out_Color0");
     err = glGetError();
     if (err != GL_NO_ERROR) dprint("ERROR - glError 8: 0x%04X\n", err);
-    glLinkProgram(target_data->shader_program);
+    glLinkProgram(new_shader->shader_program);
     err = glGetError();
     if (err != GL_NO_ERROR) dprint("ERROR - glError 8: 0x%04X\n", err);
     glDeleteShader(vert_shader);
@@ -60,6 +75,7 @@ node* FSnode_setShader(node* target, const char* name) {
     err = glGetError();
     if (err != GL_NO_ERROR) dprint("ERROR - glError 8: 0x%04X\n", err);
 
+    target_data->shader = new_shader_node;
 	return target;
 }
 
@@ -67,10 +83,14 @@ node* FSnode_unsetShader(node* target) {
     NULL_CHECK(target);
     fs_3d_data* target_data = (fs_3d_data*)target->data;
     NULL_CHECK(target_data);
+    rbtree_node* target_shader_node = (rbtree_node*)target_data->shader;
+    FS_Type_ShaderInfo* target_shader = (FS_Type_ShaderInfo*)target_shader_node->data;
+    NULL_CHECK(target_shader);
 
-    free(target_data->shader_name);
-    target_data->shader_name = NULL;
-    glDeleteProgram(target_data->shader_program);
+    target_shader->reference_count--;
+    target_data->shader = NULL;
+
+    // TODO: Remove shader from rbtree!
 
     return target;
 }

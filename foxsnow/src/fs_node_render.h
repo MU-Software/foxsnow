@@ -12,8 +12,8 @@
 #include "datatype/fs_node.h"
 
 extern unsigned long long frame_number;
-extern int current_resolution_x;
-extern int current_resolution_y;
+extern unsigned int current_resolution_x;
+extern unsigned int current_resolution_y;
 
 typedef struct _fs_camera {
 	float pos[3];

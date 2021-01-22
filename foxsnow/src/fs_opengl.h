@@ -21,8 +21,8 @@
 #define COUNT_OF(x) ((sizeof(x)/sizeof(0[x])) / ((size_t)(!(sizeof(x) % sizeof(0[x])))))
 
 extern unsigned long long frame_number;
-extern int current_resolution_x;
-extern int current_resolution_y;
+extern unsigned int current_resolution_x;
+extern unsigned int current_resolution_y;
 
 typedef struct _FS_GL_VERSION {
     int major;
@@ -48,6 +48,13 @@ typedef struct _TextureInfo {
     GLuint filter_min;
     GLuint filter_mag;  // mag is not a typo
 } TextureInfo;
+
+typedef struct _FS_ShaderInfo {
+    GLuint shader_program;
+    char* shader_name;
+
+    unsigned int reference_count;
+} FS_Type_ShaderInfo;
 
 extern const GLfloat FS_CoreScreenQuadVert[18];
 extern const GLfloat FS_CoreScreenQuadTexCoord[12];

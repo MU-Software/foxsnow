@@ -12,12 +12,11 @@
 
 #include "fs_matrix.h"
 #include "fs_list.h"
+#include "fs_rbtree.h"
+#include "../fs_opengl.h"
 
-typedef struct _fs_3d_data {
-    GLuint shader_program;
-    char* shader_name;
-
-    bool do_backface_cull;
+typedef struct _FS_Type_3D_PolyModel {
+    char* name;
 
     int model_vertex_size;
     float* model_vertex_array;
@@ -31,6 +30,17 @@ typedef struct _fs_3d_data {
     GLuint vertex_buffer_normal;
     list* vertex_buffer_texcoord_list;
     list* texture_list;
+
+    float collision_radius;
+
+    unsigned int reference_count;
+} FS_Type_3D_PolyModel;
+
+typedef struct _fs_3d_data {
+    bool do_backface_cull;
+
+    rbtree_node* model;
+    rbtree_node* shader;
 
     float collision_radius;
 

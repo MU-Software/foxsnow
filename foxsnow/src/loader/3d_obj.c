@@ -461,59 +461,82 @@ node* FSnode_loadOBJ(node* target, const char* filename) {
     fs_3d_data* target_data = (fs_3d_data*)target->data;
     NULL_CHECK(target_data);
 
-    assert(target_data->shader_program && "Shader must be set to node while loading model!\n");
-    assert(!target_data->vertex_array && "Vertex array already set on node!\n");
+    GLuint target_shader = ((FS_Type_ShaderInfo*)((rbtree_node*)target_data->shader)->data)->shader_program;
+    assert(target_shader && "Shader must be set to node while loading model!\n");
+    rbtree_node* target_model_node = (rbtree_node*)target_data->model;
+    assert(!target_model_node && "3D model already set on node!\n");
+
+    unsigned int model_name_hash = hash(filename);
+    rbtree_node* cache_result = rbtree_search(cached_model, model_name_hash);
+    if (cache_result) {
+        target_data->model = cache_result;
+        return target;
+    }
+
+    FS_Type_3D_PolyModel* target_model = (FS_Type_3D_PolyModel*)calloc(1, sizeof(FS_Type_3D_PolyModel));
+    ALLOC_FAILCHECK(target_model);
+    rbtree_insert(&cached_model, model_name_hash, target_model, strdup("FS_Type_3D_PolyModel"));
+    target_model->reference_count++;
+    target_model->name = strdup(filename);
 
     FS_LoaderOBJ_DataContainer* container = (FS_LoaderOBJ_DataContainer*)calloc(1, sizeof(FS_LoaderOBJ_DataContainer));
     ALLOC_FAILCHECK(container);
     container->texture_list = create_list();
     loadOBJ_new(filename, container);
 
-    target_data->collision_radius = container->collision_radius;
-    target_data->texture_list = container->texture_list;
+    target_model->collision_radius = container->collision_radius;
+    target_model->texture_list = container->texture_list;
 
-    glGenVertexArrays(1, &(target_data->vertex_array));
-    glBindVertexArray(target_data->vertex_array);
-    glUseProgram(target_data->shader_program);
+    GLenum err = 0;
 
-    GLenum err = glGetError();
+    glGenVertexArrays(1, &(target_model->vertex_array));
+    glBindVertexArray(target_model->vertex_array);
+    glUseProgram(target_shader);
+
+    err = glGetError();
     if (err != GL_NO_ERROR) dprint("ERROR - glError 8: 0x%04X\n", err);
 
     /* Initialize Geometry */
     // Set vertex position first
-    GLint attrib_vert_loc = glGetAttribLocation(target_data->shader_program, "fs_Vertex");
+    GLint attrib_vert_loc = glGetAttribLocation(target_shader, "fs_Vertex");
     if (attrib_vert_loc != -1) {
-        assert(!target_data->vertex_buffer_position && "Vertex buffer for position already set on node!\n");
-        glGenBuffers(1, &(target_data->vertex_buffer_position));
-        glBindBuffer(GL_ARRAY_BUFFER, target_data->vertex_buffer_position);
+        assert(!target_model->vertex_buffer_position && "Vertex buffer for position already set on node!\n");
+        glGenBuffers(1, &(target_model->vertex_buffer_position));
+        glBindBuffer(GL_ARRAY_BUFFER, target_model->vertex_buffer_position);
         glBufferData(GL_ARRAY_BUFFER, container->vb_vertex_size * sizeof(float), container->vb_vertex, GL_STATIC_DRAW);
         glVertexAttribPointer(attrib_vert_loc, 3, GL_FLOAT, GL_FALSE, 0, 0);
         glEnableVertexAttribArray(attrib_vert_loc);
         glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+        err = glGetError();
+        if (err != GL_NO_ERROR) dprint("ERROR - glError 8: 0x%04X\n", err);
     }
 
-    attrib_vert_loc = glGetAttribLocation(target_data->shader_program, "fs_Normal");
+    attrib_vert_loc = glGetAttribLocation(target_shader, "fs_Normal");
     if (attrib_vert_loc != -1 && container->vb_normal_size) {
-        assert(!target_data->vertex_buffer_normal && "Vertex buffer for normal already set on node!\n");
-        glGenBuffers(1, &(target_data->vertex_buffer_normal));
-        glBindBuffer(GL_ARRAY_BUFFER, target_data->vertex_buffer_normal);
+        assert(!target_model->vertex_buffer_normal && "Vertex buffer for normal already set on node!\n");
+        glGenBuffers(1, &(target_model->vertex_buffer_normal));
+        glBindBuffer(GL_ARRAY_BUFFER, target_model->vertex_buffer_normal);
         glBufferData(GL_ARRAY_BUFFER, container->vb_normal_size * sizeof(float), container->vb_normal, GL_STATIC_DRAW);
         glVertexAttribPointer(attrib_vert_loc, 3, GL_FLOAT, GL_FALSE, 0, 0);
         glEnableVertexAttribArray(attrib_vert_loc);
         glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+        err = glGetError();
+        if (err != GL_NO_ERROR) dprint("ERROR - glError 8: 0x%04X\n", err);
     }
 
-    attrib_vert_loc = glGetAttribLocation(target_data->shader_program, "fs_MultiTexCoord0");
+    attrib_vert_loc = glGetAttribLocation(target_shader, "fs_MultiTexCoord0");
     if (attrib_vert_loc != -1 && container->vb_texcoord_size) {
-        if (!target_data->vertex_buffer_texcoord_list) {
-            target_data->vertex_buffer_texcoord_list = create_list();
+        if (!target_model->vertex_buffer_texcoord_list) {
+            target_model->vertex_buffer_texcoord_list = create_list();
         }
-        assert(!target_data->vertex_buffer_texcoord_list->length && "Vertex buffer for texcoord already set on node!\n");
-        if (!target_data->vertex_buffer_texcoord_list)
-            target_data->vertex_buffer_texcoord_list = create_list();
-        list_append(target_data->vertex_buffer_texcoord_list, calloc(1, sizeof(GLuint)), 0);
+        assert(!target_model->vertex_buffer_texcoord_list->length && "Vertex buffer for texcoord already set on node!\n");
+        if (!target_model->vertex_buffer_texcoord_list)
+            target_model->vertex_buffer_texcoord_list = create_list();
+        list_append(target_model->vertex_buffer_texcoord_list, calloc(1, sizeof(GLuint)), 0);
 
-        list_element* target_texcoord_element = target_data->vertex_buffer_texcoord_list->head;
+        list_element* target_texcoord_element = target_model->vertex_buffer_texcoord_list->head;
 
         glGenBuffers(1, &(target_texcoord_element->data));
         glBindBuffer(GL_ARRAY_BUFFER, target_texcoord_element->data);
@@ -521,17 +544,20 @@ node* FSnode_loadOBJ(node* target, const char* filename) {
         glVertexAttribPointer(attrib_vert_loc, 2, GL_FLOAT, GL_FALSE, 0, 0);
         glEnableVertexAttribArray(attrib_vert_loc);
         glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+        err = glGetError();
+        if (err != GL_NO_ERROR) dprint("ERROR - glError 8: 0x%04X\n", err);
     }
 
     // Populate element buffer
-    glGenBuffers(1, &(target_data->element_buffer));
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, target_data->element_buffer);
+    glGenBuffers(1, &(target_model->element_buffer));
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, target_model->element_buffer);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, container->element_buffer_size * sizeof(int), container->element_buffer, GL_STATIC_DRAW);
-    target_data->element_buffer_size = container->element_buffer_size;
+    target_model->element_buffer_size = container->element_buffer_size;
 
-    GLint uniform_model_mat_loc = glGetUniformLocation(target_data->shader_program, "fs_ModelMatrix");
-    GLint uniform_view_mat_loc = glGetUniformLocation(target_data->shader_program, "fs_ViewMatrix");
-    GLint uniform_proj_mat_loc = glGetUniformLocation(target_data->shader_program, "fs_ProjectionMatrix");
+    GLint uniform_model_mat_loc = glGetUniformLocation(target_shader, "fs_ModelMatrix");
+    GLint uniform_view_mat_loc = glGetUniformLocation(target_shader, "fs_ViewMatrix");
+    GLint uniform_proj_mat_loc = glGetUniformLocation(target_shader, "fs_ProjectionMatrix");
 
     glUniformMatrix4fv(uniform_model_mat_loc, 1, GL_TRUE, target_data->cumulative_model_mat->mat);
     glUniformMatrix4fv(uniform_view_mat_loc, 1, GL_TRUE, FS_ViewMatrix->mat);
@@ -549,6 +575,9 @@ node* FSnode_loadOBJ(node* target, const char* filename) {
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+    err = glGetError();
+    if (err != GL_NO_ERROR) dprint("ERROR - glError 8: 0x%04X\n", err);
 
     return target;
 }

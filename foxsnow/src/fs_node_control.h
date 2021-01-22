@@ -12,6 +12,10 @@
 #include "datatype/fs_matrix.h"
 #include "datatype/fs_3d_data.h"
 #include "datatype/fs_node.h"
+#include "datatype/fs_rbtree.h"
+
+extern rbtree_node* cached_shader;
+extern rbtree_node* cached_model;
 
 node* FSnode_setShader(node* target, const char* name);
 node* FSnode_unsetShader(node* target);

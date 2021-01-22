@@ -51,6 +51,9 @@ typedef struct _FS_FaceElementIndexes {
 	FS_EAIndex p[3];
 } FS_FEIndex;
 
+extern rbtree_node* cached_shader;
+extern rbtree_node* cached_model;
+
 node* FSnode_loadOBJ(node* target, const char* filename);
 
 #endif
