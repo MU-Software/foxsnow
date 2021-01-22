@@ -476,6 +476,7 @@ node* FSnode_loadOBJ(node* target, const char* filename) {
     FS_Type_3D_PolyModel* target_model = (FS_Type_3D_PolyModel*)calloc(1, sizeof(FS_Type_3D_PolyModel));
     ALLOC_FAILCHECK(target_model);
     rbtree_insert(&cached_model, model_name_hash, target_model, strdup("FS_Type_3D_PolyModel"));
+    target_model_node = rbtree_search(cached_model, model_name_hash);
     target_model->reference_count++;
     target_model->name = strdup(filename);
 
@@ -579,5 +580,6 @@ node* FSnode_loadOBJ(node* target, const char* filename) {
     err = glGetError();
     if (err != GL_NO_ERROR) dprint("ERROR - glError 8: 0x%04X\n", err);
 
+    target_data->model = target_model_node;
     return target;
 }
