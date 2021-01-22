@@ -479,26 +479,23 @@ int FS_runmain(PyObject* fs_py_gamemgr) {
                 else if (event.key.keysym.sym == SDLK_F4) target_frame_time = (1.0 / 60.0) * 1000000;
 
                 // Shader reload for shader debug purpose
-                else if (event.key.keysym.sym == SDLK_F7) {
-                    node* target_node = render.node_start->child_last;
-                    char* target_name = strdup(((fs_3d_data*)target_node->data)->shader_name);
-                    dprint("Reloaded %s shader!\n", target_name);
-                    FSnode_unsetShader(target_node);
-                    FSnode_setShader(target_node, target_name);
-                    free(target_name);
-                }
+                //else if (event.key.keysym.sym == SDLK_F7) {
+                //    node* target_node = render.node_start->child_last;
+                //    char* target_name = strdup(((fs_3d_data*)target_node->data)->shader_name);
+                //    dprint("Reloaded %s shader!\n", target_name);
+                //    FSnode_unsetShader(target_node);
+                //    FSnode_setShader(target_node, target_name);
+                //    free(target_name);
+                //}
 
                 // Camera re-centering
-                //else if (event.key.keysym.sym == SDLK_F9) {
-                //    spherical_coord_theta = 90.0f;
-                //    spherical_coord_phi = 90.0f;
-                //    double spherical_coord_theta_rad = getRadian(spherical_coord_theta);
-                //    double spherical_coord_phi_rad = getRadian(spherical_coord_phi);
-                //    camera.lookPoint[0] = sin(spherical_coord_theta_rad) * cos(spherical_coord_phi_rad) + camera.pos[0];
-                //    camera.lookPoint[1] = cos(spherical_coord_theta_rad) * sin(spherical_coord_phi_rad) + camera.pos[1];
-                //    camera.lookPoint[2] = sin(spherical_coord_theta_rad) + camera.pos[2];
-                //    commitCamera();
-                //}
+                else if (event.key.keysym.sym == SDLK_F9) {
+                    rads = 1.5708;
+                    cylindricalYLookAtPos = 0;
+
+                    camera.pos[0] = camera.pos[1] = camera.pos[2] = 0;
+                    FS_camera_fps_rotation(0, 0);
+                }
 
                 // Framebuffer debugging
                 else if (event.key.keysym.sym == SDLK_F10) mode_multiple_viewport = !mode_multiple_viewport;
