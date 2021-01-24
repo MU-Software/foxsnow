@@ -99,6 +99,8 @@ int FS_SDL2_init() {
         SDL_Quit();
         return 1;
     }
+
+    // Setup mouse(non-fps camera yet)
     SDL_CaptureMouse(SDL_FALSE);
     SDL_SetRelativeMouseMode(SDL_FALSE);
     SDL_ShowCursor(SDL_ENABLE);
@@ -206,6 +208,9 @@ int FS_clean_up() {
 
     glUseProgram(0);
     glDisableVertexAttribArray(0);
+
+    rbtree_free(&cached_shader);
+    rbtree_free(&cached_model);
 
     SDL_GL_DeleteContext(fs_sdl_GLcontext);
     SDL_DestroyWindow(fs_sdl_window);
@@ -327,25 +332,46 @@ void SDL_onResize() {
 }
 
 void test_env_setup() {
+    dprint("Set up test scene\n");
     // Load Model
-    float scale = 1.0f;
+    float scale = 50000.0f;
     render.node_start = create_node(NULL, renderNodeIn, renderNodeOut, create_data(), strdup("Teapot_parent"));
-    node* teapot_node_1 = create_node(render.node_start,
+    node* skyshpere = create_node(
+        render.node_start,
         renderNodeIn, renderNodeOut,
-        create_data(), strdup("Teapot_1"));
-    FSnode_setShader(teapot_node_1, "default");
-    FSnode_loadOBJ(teapot_node_1, "skysphere.obj");
-    set_scale((fs_3d_data*)(teapot_node_1->data), 50.0f, 50.0f, 50.0f);
+        create_data(), strdup("Skysphere"));
+    FSnode_setShader(skyshpere, "skysphere");
+    FSnode_loadOBJ(skyshpere, "skysphere.obj");
+    set_scale((fs_3d_data*)(skyshpere->data), scale, scale, scale);
 
-    node* teapot_node_2 = create_node(render.node_start,
-        renderNodeIn, renderNodeOut,
-        create_data(), strdup("Teapot_2"));
-    FSnode_setShader(teapot_node_2, "default");
-    FSnode_loadOBJ(teapot_node_2, "capsule.obj");
+    //node* capsule_node = create_node(render.node_start,
+    //    renderNodeIn, renderNodeOut,
+    //    create_data(), strdup("CapsuleNode"));
+    //FSnode_setShader(capsule_node, "default");
+    //FSnode_loadOBJ(capsule_node, "capsule.obj");
+    //set_scale((fs_3d_data*)(capsule_node->data), scale, scale, scale);
 
-    set_scale((fs_3d_data*)(teapot_node_2->data), scale, scale, scale);
-
-    set_z((fs_3d_data*)(teapot_node_1->data), -0.35f);
+    int model_instance = 32;
+    scale = 1.0f;
+    int x = 0, z = 0;
+    for (z=0; z <= model_instance; z += 2) {
+        for (x=0; x <= model_instance; x += 2) {
+            char node_name[64] = { 0 };
+            sprintf(node_name, "CapsuleNode_%dx%d", x, z);
+            node* tmp_capsule_node = create_node(
+                //render.node_start,
+                skyshpere,
+                renderNodeIn, renderNodeOut,
+                create_data(), strdup(node_name));
+            FSnode_setShader(tmp_capsule_node, "default");
+            FSnode_loadOBJ(tmp_capsule_node, "capsule.obj");
+            set_scale((fs_3d_data*)(tmp_capsule_node->data), scale, scale, scale);
+            set_pos((fs_3d_data*)(tmp_capsule_node->data),
+                    (float)(model_instance - (x * 2)),
+                    0,
+                    (float)(model_instance - (z * 2)));
+        }
+    }
 }
 
 int FS_runmain(PyObject* fs_py_gamemgr) {
@@ -354,7 +380,7 @@ int FS_runmain(PyObject* fs_py_gamemgr) {
 
     unsigned long long last_render_time = get_elapsed_time();
     double target_frame_time = (1.0 / (double)FPS_LIMIT) * 1000000;
-    double margin_frame_time = target_frame_time / 4;
+    double margin_frame_time = target_frame_time / 8;
 
     // If we can't initialize engine properly,
     // then it's better to terminate whole program than left something.
@@ -416,7 +442,6 @@ int FS_runmain(PyObject* fs_py_gamemgr) {
             fs_py_gamemgr = NULL;
             fs_py_gamemgr_update_mtd = NULL;
         }
-        test_env_setup();
     }
     else {
 #endif
@@ -561,11 +586,11 @@ int FS_runmain(PyObject* fs_py_gamemgr) {
             }
         }
 
-        FS_camera_fps_position();
-
         // Render frame with proper FPS timing
         double tmp_last_render_time = 0;
         if ((tmp_last_render_time = (double)get_elapsed_time()) > (double)last_render_time + target_frame_time - margin_frame_time) {
+
+            FS_camera_fps_position();
 
 #ifdef FS_ENABLE_PYTHON_SUPPORT
             if (fs_py_gamemgr) {
@@ -593,7 +618,7 @@ int FS_runmain(PyObject* fs_py_gamemgr) {
             frame_number++;
             fps = 1000.0 / (float)(SDL_GetTicks() - start_tick);
             double frame_time = tmp_last_render_time - last_render_time;
-            //dprint("FPS : %15lf(%lfms), Frame : %llu\r", fps, frame_time / 1000, frame_number);
+            dprint("FPS : %15lf(%lfms), Frame : %llu\r", fps, frame_time / 1000, frame_number);
             last_render_time = tmp_last_render_time;
         }
     }
