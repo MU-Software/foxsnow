@@ -28,11 +28,16 @@ void FS_camera_fps_position() {
     float resultXmovement = xMovementSpeed;
     float resultYmovement = yMovementSpeed;
     float resultMovementVec = sqrtf((resultXmovement * resultXmovement) + (resultYmovement * resultYmovement));
-    dprint("Vec: %f\r", resultMovementVec);
+    //dprint("resultMovementVec = %f\r", resultMovementVec);
     if (xMovementSpeed && yMovementSpeed) {
         resultXmovement /= resultMovementVec;
         resultYmovement /= resultMovementVec;
+        resultMovementVec /= resultMovementVec;
     }
+    //dprint("resultMovementVec = %f, Xdelta = %f, Ydelta = %f\r", resultMovementVec, resultXmovement, resultYmovement);
+    //dprint("resultMovementVec=%f, Xdelta=%f, Ydelta=%f, campos=(%f, %f, %f)\n",
+            //resultMovementVec, resultXmovement, resultYmovement,
+            //camera.pos[0], camera.pos[1], camera.pos[2]);
     
     xDelta = resultXmovement * cos(rads) + resultYmovement * cos(frads);
     zDelta = -resultXmovement * sin(rads) + resultYmovement * sin(frads);
