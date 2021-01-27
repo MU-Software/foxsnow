@@ -170,6 +170,7 @@
     <ClCompile Include="src\loader\2d_dds.c" />
     <ClCompile Include="src\loader\2d_png.c" />
     <ClCompile Include="src\loader\3d_obj.c" />
+    <ClCompile Include="src\loader\3d_vox.c" />
     <ClCompile Include="src\utils\fs_debug_print.c" />
   </ItemGroup>
   <ItemGroup>
@@ -186,6 +187,7 @@
     <ClInclude Include="src\loader\2d_dds.h" />
     <ClInclude Include="src\loader\2d_png.h" />
     <ClInclude Include="src\loader\3d_obj.h" />
+    <ClInclude Include="src\loader\3d_vox.h" />
     <ClInclude Include="src\utils\fs_debug_print.h" />
   </ItemGroup>
   <ItemGroup>
