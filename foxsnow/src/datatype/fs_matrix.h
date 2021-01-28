@@ -27,6 +27,7 @@ matrix* mat_multiply(matrix* a, matrix* b);
 matrix* mat_square_multiply(matrix* a, matrix* b);
 matrix* mat_divide(matrix* a, matrix* b);
 matrix* mat_transpose(matrix* target);
+matrix* mat_inverse(matrix* target);
 
 void mat_test(void);
 #endif
